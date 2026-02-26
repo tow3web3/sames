@@ -101,6 +101,74 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
 .card-footer .mint-addr{font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.6}
 .floor-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,215,0,.06);color:var(--gold);border:1px solid rgba(255,215,0,.1)}
 
+/* ── CREATE PAGE ── */
+.create-page{max-width:960px;margin:0 auto;padding:32px 24px 80px}
+.create-page h1{font-family:var(--sans);font-size:28px;font-weight:700;margin-bottom:4px}
+.create-page .subtitle{font-family:var(--inter);font-size:14px;color:var(--text-dim);margin-bottom:32px}
+.create-layout{display:grid;grid-template-columns:1fr 300px;gap:32px}
+.create-form{}
+.create-preview{position:sticky;top:76px}
+
+.form-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px}
+.form-section h3{font-family:var(--sans);font-size:16px;font-weight:600;margin-bottom:16px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.form-group:last-child{margin-bottom:0}
+.form-group label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.5px}
+.form-group input,.form-group textarea{font-family:var(--inter);font-size:14px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);outline:none;transition:border-color .15s}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--gold)}
+.form-group textarea{resize:vertical;min-height:80px;font-size:13px}
+.form-group input::placeholder,.form-group textarea::placeholder{color:#444}
+.form-group .char-count{font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:right;margin-top:2px}
+
+.social-toggle{font-family:var(--mono);font-size:12px;color:var(--gold);cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:6px 0;border:none;background:none;transition:color .15s}
+.social-toggle:hover{color:var(--gold-dim)}
+.social-fields{display:none;margin-top:12px}
+.social-fields.open{display:block}
+
+.image-upload{border:2px dashed var(--border);border-radius:14px;padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.image-upload:hover{border-color:var(--border-hover);background:rgba(255,255,255,.02)}
+.image-upload.has-image{border-color:var(--gold);border-style:solid;padding:0}
+.image-upload .upload-icon{font-size:36px;margin-bottom:8px;opacity:.6}
+.image-upload .upload-text{font-family:var(--sans);font-size:14px;font-weight:500;margin-bottom:4px}
+.image-upload .upload-hint{font-family:var(--mono);font-size:11px;color:var(--text-dim)}
+.image-upload img{width:100%;height:auto;display:block;border-radius:12px}
+.image-upload input[type="file"]{display:none}
+
+.file-specs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}
+.file-spec{display:flex;align-items:flex-start;gap:8px}
+.file-spec .spec-icon{font-size:16px;flex-shrink:0;margin-top:2px}
+.file-spec .spec-title{font-family:var(--sans);font-size:12px;font-weight:600;margin-bottom:2px}
+.file-spec .spec-list{font-family:var(--mono);font-size:10px;color:var(--text-dim);line-height:1.6}
+
+.form-note{font-family:var(--mono);font-size:11px;color:var(--text-dim);padding:12px 16px;border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.form-note .note-icon{font-size:14px;flex-shrink:0}
+
+.create-submit{width:100%;font-family:var(--sans);font-size:16px;font-weight:700;padding:16px;border-radius:12px;border:none;background:var(--gold);color:#000;cursor:pointer;transition:all .2s}
+.create-submit:hover{box-shadow:0 0 30px rgba(255,215,0,.3);transform:translateY(-1px)}
+.create-submit:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+
+.preview-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.preview-card .preview-label{font-family:var(--sans);font-size:14px;font-weight:600;padding:16px 16px 12px;color:var(--text-dim)}
+.preview-image{width:100%;aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--inter);font-size:13px}
+.preview-image img{width:100%;height:100%;object-fit:cover}
+.preview-info{padding:14px 16px}
+.preview-name{font-family:var(--sans);font-size:16px;font-weight:600;margin-bottom:2px}
+.preview-ticker{font-family:var(--mono);font-size:12px;color:var(--text-dim)}
+.preview-desc{font-family:var(--inter);font-size:12px;color:var(--text-mid);margin-top:8px;line-height:1.5}
+.preview-links{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.preview-link{font-family:var(--mono);font-size:10px;color:var(--gold);padding:3px 8px;border-radius:5px;background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.1)}
+.preview-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px;border-top:1px solid var(--border)}
+.preview-stat{text-align:center}
+.preview-stat .ps-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px}
+.preview-stat .ps-val{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--gold);margin-top:2px}
+
+@media(max-width:768px){
+  .create-layout{grid-template-columns:1fr}
+  .create-preview{position:static}
+  .form-row{grid-template-columns:1fr}
+}
+
 /* SECTION VISIBILITY */
 .page-section{display:none}
 .page-section.active{display:block}
@@ -432,25 +500,114 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
   </div>
 </div>
 
-<!-- LAUNCH MODAL -->
-<div class="modal-overlay" id="launchModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeLaunchModal()">&times;</button>
-    <h2>🚀 Launch Token</h2>
-    <label>Token Name</label>
-    <input type="text" id="lm-name" placeholder="e.g. Samurai Cat" maxlength="32">
-    <label>Symbol</label>
-    <input type="text" id="lm-symbol" placeholder="e.g. SCAT" maxlength="10">
-    <div style="margin-top:14px;padding:12px;background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.1);border-radius:8px">
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between;margin-bottom:6px">
-        <span>Supply</span><span style="color:var(--gold)">1,000,000,000</span>
+<!-- ═══ CREATE TOKEN PAGE ═══ -->
+<div id="page-create" class="page-section">
+  <div class="create-page">
+    <h1>Create new token</h1>
+    <p class="subtitle">Choose carefully, these can't be changed once the token is created.</p>
+    
+    <div class="create-layout">
+      <div class="create-form">
+        <!-- Coin Details -->
+        <div class="form-section">
+          <h3>Token details</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Token Name</label>
+              <input type="text" id="lm-name" placeholder="Name your token" maxlength="32" oninput="updatePreview()">
+              <div class="char-count"><span id="name-count">0</span>/32</div>
+            </div>
+            <div class="form-group">
+              <label>Ticker</label>
+              <input type="text" id="lm-symbol" placeholder="e.g. DOGE" maxlength="10" oninput="updatePreview()" style="text-transform:uppercase">
+              <div class="char-count"><span id="symbol-count">0</span>/10</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Description <span style="color:var(--text-dim)">(Optional)</span></label>
+            <textarea id="lm-desc" placeholder="Write a short description" maxlength="256" oninput="updatePreview()"></textarea>
+            <div class="char-count"><span id="desc-count">0</span>/256</div>
+          </div>
+
+          <!-- Social Links -->
+          <button class="social-toggle" onclick="toggleSocials()">🔗 Add social links (Optional) ▾</button>
+          <div class="social-fields" id="socialFields">
+            <div class="form-group">
+              <label>🌐 Website</label>
+              <input type="url" id="lm-website" placeholder="https://yourtoken.com" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+              <label>✈️ Telegram</label>
+              <input type="url" id="lm-telegram" placeholder="https://t.me/yourgroup" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+              <label>𝕏 Twitter</label>
+              <input type="url" id="lm-twitter" placeholder="https://x.com/yourtoken" oninput="updatePreview()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Upload -->
+        <div class="form-section">
+          <h3>Token image</h3>
+          <div class="image-upload" id="imageUpload" onclick="document.getElementById('imageInput').click()">
+            <div id="uploadPlaceholder">
+              <div class="upload-icon">🖼️</div>
+              <div class="upload-text">Select image to upload</div>
+              <div class="upload-hint">or drag and drop it here</div>
+            </div>
+            <img id="imagePreviewSrc" style="display:none">
+            <input type="file" id="imageInput" accept="image/png,image/jpeg,image/gif,image/webp" onchange="handleImageUpload(event)">
+          </div>
+          <div class="file-specs">
+            <div class="file-spec">
+              <span class="spec-icon">📄</span>
+              <div>
+                <div class="spec-title">File size and type</div>
+                <div class="spec-list">Image — max 5MB<br>.jpg, .png, .gif or .webp</div>
+              </div>
+            </div>
+            <div class="file-spec">
+              <span class="spec-icon">📐</span>
+              <div>
+                <div class="spec-title">Resolution</div>
+                <div class="spec-list">Min 500×500px<br>1:1 square recommended</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fixed params info -->
+        <div class="form-note">
+          <span class="note-icon">ℹ️</span>
+          Token data (image, social links) can only be set at creation and can't be changed after.
+        </div>
+
+        <button class="create-submit" id="lm-submit" onclick="submitLaunch()">Create Token</button>
       </div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between">
-        <span>Decimals</span><span style="color:var(--gold)">6</span>
+
+      <!-- Live Preview -->
+      <div class="create-preview">
+        <div class="preview-card">
+          <div class="preview-label">Preview</div>
+          <div class="preview-image" id="previewImage">
+            A preview of how the token will look
+          </div>
+          <div class="preview-info">
+            <div class="preview-name" id="previewName">Token Name</div>
+            <div class="preview-ticker" id="previewTicker">$TICKER</div>
+            <div class="preview-desc" id="previewDesc" style="display:none"></div>
+            <div class="preview-links" id="previewLinks"></div>
+          </div>
+          <div class="preview-stats">
+            <div class="preview-stat"><div class="ps-label">Supply</div><div class="ps-val">1B</div></div>
+            <div class="preview-stat"><div class="ps-label">Presale</div><div class="ps-val">30s</div></div>
+            <div class="preview-stat"><div class="ps-label">Graduation</div><div class="ps-val">69 SOL</div></div>
+            <div class="preview-stat"><div class="ps-label">Price Floor</div><div class="ps-val">✅</div></div>
+          </div>
+        </div>
       </div>
     </div>
-    <button class="modal-submit" id="lm-submit" onclick="submitLaunch()">Create Launch</button>
-    <div class="modal-info">Fixed 1B supply. Fair presale opens immediately for 30 seconds.</div>
   </div>
 </div>
 
@@ -494,6 +651,7 @@ function navigate(page, param) {
   if (page === 'launches') window.location.hash = '#launches';
   else if (page === 'how-it-works') window.location.hash = '#how-it-works';
   else if (page === 'my-tokens') window.location.hash = '#my-tokens';
+  else if (page === 'create') window.location.hash = '#create';
   else if (page === 'token') window.location.hash = '#token/' + param;
 }
 
@@ -506,6 +664,8 @@ function handleRoute() {
     document.getElementById('page-token').classList.add('active');
     const id = hash.slice(7);
     renderTokenDetail(id);
+  } else if (hash === '#create') {
+    document.getElementById('page-create').classList.add('active');
   } else if (hash === '#how-it-works') {
     document.getElementById('page-how-it-works').classList.add('active');
     document.querySelector('[data-nav="how-it-works"]')?.classList.add('active');
@@ -578,9 +738,71 @@ function timeAgo(timestamp) {
 // ── Create Launch ──
 document.getElementById('createBtn').addEventListener('click', () => {
   if (!walletPubkey) { alert('Connect wallet first'); return; }
-  document.getElementById('launchModal').classList.add('open');
+  navigate('create');
 });
-function closeLaunchModal() { document.getElementById('launchModal').classList.remove('open'); }
+
+function toggleSocials() {
+  document.getElementById('socialFields').classList.toggle('open');
+}
+
+let uploadedImageData = null;
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    uploadedImageData = ev.target.result;
+    const img = document.getElementById('imagePreviewSrc');
+    img.src = uploadedImageData;
+    img.style.display = 'block';
+    document.getElementById('uploadPlaceholder').style.display = 'none';
+    document.getElementById('imageUpload').classList.add('has-image');
+    updatePreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function updatePreview() {
+  const name = document.getElementById('lm-name').value || 'Token Name';
+  const symbol = document.getElementById('lm-symbol').value || 'TICKER';
+  const desc = document.getElementById('lm-desc').value;
+  document.getElementById('previewName').textContent = name;
+  document.getElementById('previewTicker').textContent = '$' + symbol.toUpperCase();
+  document.getElementById('name-count').textContent = document.getElementById('lm-name').value.length;
+  document.getElementById('symbol-count').textContent = document.getElementById('lm-symbol').value.length;
+  document.getElementById('desc-count').textContent = (desc || '').length;
+
+  const descEl = document.getElementById('previewDesc');
+  if (desc) { descEl.textContent = desc; descEl.style.display = 'block'; }
+  else { descEl.style.display = 'none'; }
+
+  if (uploadedImageData) {
+    document.getElementById('previewImage').innerHTML = `<img src="${uploadedImageData}">`;
+  }
+
+  // Social links preview
+  const links = [];
+  const website = document.getElementById('lm-website')?.value;
+  const telegram = document.getElementById('lm-telegram')?.value;
+  const twitter = document.getElementById('lm-twitter')?.value;
+  if (website) links.push('🌐 Website');
+  if (telegram) links.push('✈️ Telegram');
+  if (twitter) links.push('𝕏 Twitter');
+  const linksEl = document.getElementById('previewLinks');
+  linksEl.innerHTML = links.map(l => `<span class="preview-link">${l}</span>`).join('');
+}
+
+// Drag & drop support
+const uploadArea = document.getElementById('imageUpload');
+if (uploadArea) {
+  ['dragenter','dragover'].forEach(ev => uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.style.borderColor = 'var(--gold)'; }));
+  ['dragleave','drop'].forEach(ev => uploadArea.addEventListener(ev, e => { e.preventDefault(); uploadArea.style.borderColor = ''; }));
+  uploadArea.addEventListener('drop', e => {
+    const file = e.dataTransfer?.files[0];
+    if (file) { document.getElementById('imageInput').files = e.dataTransfer.files; handleImageUpload({target:{files:[file]}}); }
+  });
+}
 
 async function submitLaunch() {
   const name = document.getElementById('lm-name').value.trim();
@@ -625,7 +847,7 @@ async function submitLaunch() {
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
     alert('🚀 Launch created! TX: ' + sig);
-    closeLaunchModal();
+    navigate('launches');
     loadOnchainLaunches();
   } catch(e) {
     console.error(e);
@@ -1219,7 +1441,6 @@ document.querySelector('.filter-search').addEventListener('input', (e) => {
 });
 
 // Close modals on overlay click
-document.getElementById('launchModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeLaunchModal(); });
 document.getElementById('buyModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeBuyModal(); });
 
 // ── Init ──
