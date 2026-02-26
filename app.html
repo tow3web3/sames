@@ -169,6 +169,29 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
   .form-row{grid-template-columns:1fr}
 }
 
+/* ── TOASTS ── */
+.toast-container{position:fixed;top:72px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{pointer-events:auto;font-family:var(--inter);font-size:13px;padding:14px 20px;border-radius:12px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;align-items:flex-start;gap:10px;max-width:380px;animation:toast-in .3s ease;border:1px solid}
+.toast.toast-out{animation:toast-out .25s ease forwards}
+.toast-error{background:rgba(255,68,68,.12);border-color:rgba(255,68,68,.2);color:#ff8888}
+.toast-success{background:rgba(0,255,136,.1);border-color:rgba(0,255,136,.18);color:#66ffaa}
+.toast-warning{background:rgba(255,215,0,.1);border-color:rgba(255,215,0,.18);color:#ffd966}
+.toast-info{background:rgba(68,136,255,.1);border-color:rgba(68,136,255,.18);color:#88bbff}
+.toast-icon{font-size:18px;flex-shrink:0;line-height:1}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-family:var(--sans);font-size:13px;font-weight:600;margin-bottom:2px}
+.toast-msg{font-size:12px;line-height:1.5;opacity:.85;word-break:break-word}
+.toast-close{background:none;border:none;color:inherit;font-size:16px;cursor:pointer;padding:0 0 0 8px;opacity:.5;flex-shrink:0}
+.toast-close:hover{opacity:1}
+.toast-progress{position:absolute;bottom:0;left:0;height:2px;border-radius:0 0 12px 12px;animation:toast-progress linear forwards}
+.toast-error .toast-progress{background:var(--red)}
+.toast-success .toast-progress{background:var(--green)}
+.toast-warning .toast-progress{background:var(--gold)}
+.toast-info .toast-progress{background:var(--blue)}
+@keyframes toast-in{from{opacity:0;transform:translateX(40px) scale(.95)}to{opacity:1;transform:translateX(0) scale(1)}}
+@keyframes toast-out{from{opacity:1;transform:translateX(0) scale(1)}to{opacity:0;transform:translateX(40px) scale(.9)}}
+@keyframes toast-progress{from{width:100%}to{width:0%}}
+
 /* SECTION VISIBILITY */
 .page-section{display:none}
 .page-section.active{display:block}
@@ -624,6 +647,9 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
   </div>
 </div>
 
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
 <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -636,6 +662,32 @@ const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 let walletPubkey = null;
 let onchainLaunches = [];
 let selectedLaunch = null;
+
+// ── Toast System ──
+const TOAST_ICONS = { error:'❌', success:'✅', warning:'⚠️', info:'ℹ️' };
+const TOAST_TITLES = { error:'Error', success:'Success', warning:'Warning', info:'Info' };
+
+function toast(msg, type='info', duration=5000) {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.style.position = 'relative';
+  el.innerHTML = `
+    <span class="toast-icon">${TOAST_ICONS[type]}</span>
+    <div class="toast-body">
+      <div class="toast-title">${TOAST_TITLES[type]}</div>
+      <div class="toast-msg">${msg}</div>
+    </div>
+    <button class="toast-close" onclick="dismissToast(this.parentElement)">&times;</button>
+    <div class="toast-progress" style="animation-duration:${duration}ms"></div>`;
+  container.appendChild(el);
+  setTimeout(() => dismissToast(el), duration);
+}
+function dismissToast(el) {
+  if (!el || el.classList.contains('toast-out')) return;
+  el.classList.add('toast-out');
+  setTimeout(() => el.remove(), 250);
+}
 
 // Status enum mapping (matches Rust enum order)
 const STATUS_PRESALE = 0;
@@ -696,7 +748,7 @@ document.getElementById('walletBtn').addEventListener('click', async () => {
     btn.classList.add('connected');
   } catch(e) {
     console.error(e);
-    alert('Wallet connection failed: ' + (e.message || e));
+    toast('Wallet connection failed: ' + (e.message || e), 'error');
   }
 });
 
@@ -737,7 +789,7 @@ function timeAgo(timestamp) {
 
 // ── Create Launch ──
 document.getElementById('createBtn').addEventListener('click', () => {
-  if (!walletPubkey) { alert('Connect wallet first'); return; }
+  if (!walletPubkey) { toast('Connect your wallet first', 'warning'); return; }
   navigate('create');
 });
 
@@ -749,7 +801,7 @@ let uploadedImageData = null;
 function handleImageUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
+  if (file.size > 5 * 1024 * 1024) { toast('Image must be under 5MB', 'warning'); return; }
   const reader = new FileReader();
   reader.onload = (ev) => {
     uploadedImageData = ev.target.result;
@@ -807,7 +859,7 @@ if (uploadArea) {
 async function submitLaunch() {
   const name = document.getElementById('lm-name').value.trim();
   const symbol = document.getElementById('lm-symbol').value.trim();
-  if (!name || !symbol) { alert('Fill all fields'); return; }
+  if (!name || !symbol) { toast('Please fill in token name and symbol', 'warning'); return; }
   const supply = 1_000_000_000_000_000; // 1B tokens with 6 decimals
   const price = 1000; // 0.000001 SOL per token (starting price, bonding curve will increase)
   const btn = document.getElementById('lm-submit');
@@ -846,12 +898,12 @@ async function submitLaunch() {
     const signed = await provider.signTransaction(tx);
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
-    alert('🚀 Launch created! TX: ' + sig);
+    toast('Token launched! TX: ' + sig.slice(0,16) + '...', 'success', 8000);
     navigate('launches');
     loadOnchainLaunches();
   } catch(e) {
     console.error(e);
-    alert('Error: ' + (e.message || e));
+    toast((e.message || String(e)).slice(0, 200), 'error', 8000);
   } finally {
     btn.disabled = false; btn.textContent = 'Create Launch';
   }
@@ -859,7 +911,7 @@ async function submitLaunch() {
 
 // ── Buy Presale ──
 function openBuyModal(launch) {
-  if (!walletPubkey) { alert('Connect wallet first'); return; }
+  if (!walletPubkey) { toast('Connect your wallet first', 'warning'); return; }
   selectedLaunch = launch;
   const priceSOL = (launch.price_lamports / LAMPORTS_PER_SOL).toFixed(6);
   document.getElementById('buy-token-info').textContent = `${launch.token_name} (${launch.token_symbol}) — ${priceSOL} SOL/token`;
@@ -871,7 +923,7 @@ function closeBuyModal() { document.getElementById('buyModal').classList.remove(
 async function submitBuy() {
   if (!selectedLaunch) return;
   const solAmount = parseFloat(document.getElementById('bm-amount').value);
-  if (!solAmount || solAmount <= 0) { alert('Enter SOL amount'); return; }
+  if (!solAmount || solAmount <= 0) { toast('Enter a valid SOL amount', 'warning'); return; }
   const btn = document.getElementById('bm-submit');
   btn.disabled = true; btn.textContent = 'Sending...';
   try {
@@ -924,7 +976,7 @@ async function submitBuy() {
         data: Buffer.from(data),
       });
     } else {
-      alert('This token is not available for purchase (graduated or closed).');
+      toast('This token is graduated or closed — trade on Raydium', 'info');
       return;
     }
 
@@ -935,12 +987,12 @@ async function submitBuy() {
     const signed = await provider.signTransaction(tx);
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
-    alert('✅ Purchase successful! TX: ' + sig);
+    toast('Purchase successful! TX: ' + sig.slice(0,16) + '...', 'success', 8000);
     closeBuyModal();
     loadOnchainLaunches();
   } catch(e) {
     console.error(e);
-    alert('Error: ' + (e.message || e));
+    toast((e.message || String(e)).slice(0, 200), 'error', 8000);
   } finally {
     btn.disabled = false; btn.textContent = 'Buy';
   }
@@ -1269,7 +1321,7 @@ function switchTradeTab(el, mode) {
 }
 
 function detailTrade(id) {
-  if (!walletPubkey) { alert('Connect wallet first'); return; }
+  if (!walletPubkey) { toast('Connect your wallet first', 'warning'); return; }
   const l = onchainLaunches.find(x => x.address === id);
   if (!l) return;
   openBuyModal(l);
