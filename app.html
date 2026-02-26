@@ -1093,6 +1093,13 @@ async function submitLaunch() {
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
     toast('Token launched! TX: ' + sig.slice(0,16) + '...', 'success', 8000);
+    // Record initial price snapshot
+    try {
+      await fetch(`${API_URL}/api/snapshot/${launchPool.toBase58()}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ price_lamports: price, tokens_sold: 0, sol_collected: 0 })
+      });
+    } catch(e) {}
     navigate('launches');
     loadOnchainLaunches();
   } catch(e) {
@@ -1182,6 +1189,18 @@ async function submitBuy() {
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
     toast('Purchase successful! TX: ' + sig.slice(0,16) + '...', 'success', 8000);
+    // Record trade + snapshot
+    try {
+      const cp = bondingCurvePrice(selectedLaunch.price_lamports, selectedLaunch.slope_scaled || 0, selectedLaunch.tokens_sold_curve || 0);
+      await fetch(`${API_URL}/api/trade/${selectedLaunch.address}`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ wallet:walletPubkey.toBase58(), tx_sig:sig, trade_type:'buy', sol_amount:lamports, token_amount:0, price_lamports:cp })
+      });
+      await fetch(`${API_URL}/api/snapshot/${selectedLaunch.address}`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ price_lamports:cp, tokens_sold:selectedLaunch.tokens_sold_curve||0, sol_collected:(selectedLaunch.total_sol_collected||0)+lamports })
+      });
+    } catch(ignore) {}
     closeBuyModal();
     loadOnchainLaunches();
   } catch(e) {
@@ -1485,11 +1504,7 @@ function renderTokenDetail(id) {
         </div>
         <div class="activity-feed">
           <h3>Recent Activity</h3>
-          <div id="activity-list">
-            <p style="color:var(--text-dim);text-align:center;padding:24px;font-family:var(--mono);font-size:12px">
-              Activity tracking coming soon. Check <a href="https://explorer.solana.com/address/${l.address}?cluster=devnet" target="_blank" style="color:var(--gold)">Solana Explorer</a> for transactions.
-            </p>
-          </div>
+          <div id="activity-list"><div class="chat-empty">Loading trades...</div></div>
         </div>
         ${getChatHTML(l.address)}
       </div>
@@ -1500,12 +1515,14 @@ function renderTokenDetail(id) {
 
   // Load chat
   setTimeout(() => loadChat(l.address), 100);
-  // Poll chat every 10s
   if (chatPollInterval) clearInterval(chatPollInterval);
   chatPollInterval = setInterval(() => loadChat(l.address), 10000);
 
-  // Draw bonding curve chart
-  setTimeout(() => drawBondingCurveChart(l), 50);
+  // Load real trades for activity feed
+  setTimeout(() => loadTrades(l.address), 100);
+
+  // Draw chart with real price data
+  setTimeout(() => loadAndDrawChart(l), 50);
 }
 
 function switchTradeTab(el, mode) {
@@ -1528,8 +1545,47 @@ function detailTrade(id) {
   openBuyModal(l);
 }
 
-// ── Bonding Curve Chart ──
-function drawBondingCurveChart(l) {
+// ── Load real trades for activity feed ──
+async function loadTrades(tokenAddress) {
+  const container = document.getElementById('activity-list');
+  if (!container) return;
+  try {
+    const res = await fetch(`${API_URL}/api/trades/${tokenAddress}?limit=20`);
+    const trades = await res.json();
+    if (!trades.length) {
+      container.innerHTML = '<div class="chat-empty">No trades yet</div>';
+      return;
+    }
+    container.innerHTML = trades.reverse().map(t => {
+      const name = t.username || shortAddr(t.wallet);
+      const solAmt = formatSOL(Number(t.sol_amount));
+      const ts = typeof t.created_at === 'string' ? Math.floor(new Date(t.created_at).getTime()/1000) : t.created_at;
+      const typeClass = t.trade_type === 'sell' ? 'sell' : 'buy';
+      const typeLabel = t.trade_type === 'presale' ? 'PRESALE' : t.trade_type.toUpperCase();
+      return `<div class="activity-item">
+        <span class="activity-type ${typeClass}">${typeLabel}</span>
+        <span class="activity-wallet">${name}</span>
+        <span class="activity-amount">${solAmt} SOL</span>
+        <span class="activity-time">${timeAgo(ts)}</span>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div class="chat-empty">Failed to load trades</div>';
+  }
+}
+
+// ── Bonding Curve Chart (with real price data overlay) ──
+async function loadAndDrawChart(l) {
+  let realPrices = [];
+  try {
+    const res = await fetch(`${API_URL}/api/prices/${l.address}?limit=200`);
+    realPrices = await res.json();
+  } catch(e) {}
+  drawBondingCurveChart(l, realPrices);
+}
+
+function drawBondingCurveChart(l, realPrices) {
+  realPrices = realPrices || [];
   const canvas = document.getElementById('priceChart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -1651,6 +1707,47 @@ function drawBondingCurveChart(l) {
     ctx.font = '9px JetBrains Mono';
     ctx.textAlign = 'left';
     ctx.fillText('floor', pad.left + 4, floorY - 4);
+  }
+
+  // ── Overlay real price data points ──
+  if (realPrices.length > 0) {
+    // Map real timestamps to x positions
+    const firstTime = new Date(realPrices[0].created_at).getTime();
+    const lastTime = realPrices.length > 1 ? new Date(realPrices[realPrices.length - 1].created_at).getTime() : firstTime + 60000;
+    const timeRange = Math.max(lastTime - firstTime, 1000);
+
+    // Draw real price line
+    ctx.beginPath();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.9;
+    realPrices.forEach((p, i) => {
+      const t = new Date(p.created_at).getTime();
+      const x = pad.left + ((t - firstTime) / timeRange) * (w - pad.left - pad.right);
+      const y = toY(Number(p.price_lamports) / LAMPORTS_PER_SOL);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Draw dots for each data point
+    realPrices.forEach((p, i) => {
+      const t = new Date(p.created_at).getTime();
+      const x = pad.left + ((t - firstTime) / timeRange) * (w - pad.left - pad.right);
+      const y = toY(Number(p.price_lamports) / LAMPORTS_PER_SOL);
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+    });
+
+    // Label "Real data" legend
+    ctx.fillStyle = '#fff';
+    ctx.font = '9px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText('● Real prices', w - pad.right, pad.top - 6);
+    ctx.fillStyle = lineColor;
+    ctx.fillText('─ Bonding curve', w - pad.right - 90, pad.top - 6);
   }
 }
 

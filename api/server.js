@@ -132,6 +132,63 @@ app.post('/api/chat/:tokenAddress', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ══════════════════════════════════════════
+// TRADES & PRICE HISTORY
+// ══════════════════════════════════════════
+
+// Record a trade
+app.post('/api/trade/:tokenAddress', async (req, res) => {
+  const { wallet, tx_sig, trade_type, sol_amount, token_amount, price_lamports } = req.body;
+  if (!wallet || !tx_sig || !trade_type) return res.status(400).json({ error: 'Missing fields' });
+  try {
+    await pool.query(`
+      INSERT INTO trades (token_address, tx_sig, wallet, trade_type, sol_amount, token_amount, price_lamports)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT(tx_sig) DO NOTHING
+    `, [req.params.tokenAddress, tx_sig, wallet, trade_type, sol_amount || 0, token_amount || 0, price_lamports || 0]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get trades for a token
+app.get('/api/trades/:tokenAddress', async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  try {
+    const { rows } = await pool.query(`
+      SELECT t.*, p.username, p.pfp_url FROM trades t
+      LEFT JOIN profiles p ON t.wallet = p.wallet
+      WHERE t.token_address = $1
+      ORDER BY t.created_at ASC LIMIT $2
+    `, [req.params.tokenAddress, limit]);
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Record price snapshot
+app.post('/api/snapshot/:tokenAddress', async (req, res) => {
+  const { price_lamports, tokens_sold, sol_collected } = req.body;
+  try {
+    await pool.query(`
+      INSERT INTO price_snapshots (token_address, price_lamports, tokens_sold, sol_collected)
+      VALUES ($1, $2, $3, $4)
+    `, [req.params.tokenAddress, price_lamports, tokens_sold || 0, sol_collected || 0]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get price history for a token
+app.get('/api/prices/:tokenAddress', async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
+  try {
+    const { rows } = await pool.query(`
+      SELECT * FROM price_snapshots
+      WHERE token_address = $1
+      ORDER BY created_at ASC LIMIT $2
+    `, [req.params.tokenAddress, limit]);
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Health ──
 app.get('/api/health', async (req, res) => {
   try {
