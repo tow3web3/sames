@@ -7,7 +7,8 @@ const fs = require('fs');
 
 const app = express();
 const PORT = 3001;
-const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_NARJFk8pPhM4@ep-muddy-sunset-ag1jhb8r.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require';
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) { console.error('DATABASE_URL not set'); process.exit(1); }
 
 // ── Setup ──
 app.use(cors());

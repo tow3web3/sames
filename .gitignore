@@ -3,3 +3,4 @@ target/
 api/node_modules/
 api/sames.db
 api/uploads/
+api/.env
