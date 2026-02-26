@@ -480,7 +480,12 @@ body.sb-collapsed .main-content{margin-left:60px}
 
   <!-- TOKEN GRID -->
   <div class="grid-container">
-    <div class="grid" id="grid"></div>
+    <div class="grid" id="grid">
+      <div style="grid-column:1/-1;text-align:center;padding:80px 24px">
+        <div style="font-size:36px;margin-bottom:16px;animation:spin 1s linear infinite">⏳</div>
+        <p style="font-family:var(--mono);font-size:14px;color:var(--text-dim)">Loading launches from Solana...</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -799,7 +804,8 @@ const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 
 const API_URL = 'http://65.20.103.177:3001';
 let walletPubkey = null;
-let onchainLaunches = [];
+let onchainLaunches = null;
+let tradeMode = 'buy';
 const tokenMetaCache = {};
 let selectedLaunch = null;
 let userProfile = null;
@@ -1171,12 +1177,10 @@ async function submitBuy() {
       });
     } else if (isBondingCurve) {
       // Token-2022 program and buyer's token account needed
-      const TOKEN_2022 = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
-      // For buy_curve, we need the mint and buyer's token account
+      // For buy_curve, we need the mint and buyer's ATA
       disc = await getDiscriminator('buy_curve');
       const data = new Uint8Array([...disc, ...encodeU64(lamports)]);
-      // Get or create associated token account for Token-2022
-      // Simplified - user needs token account
+      const buyerTokenAccount = deriveATA(walletPubkey, mintKey);
       ix = new TransactionInstruction({
         keys: [
           { pubkey: walletPubkey, isSigner: true, isWritable: true },
@@ -1184,8 +1188,8 @@ async function submitBuy() {
           { pubkey: mintKey, isSigner: false, isWritable: true },
           { pubkey: vault, isSigner: false, isWritable: true },
           { pubkey: buyerRecord, isSigner: false, isWritable: true },
-          { pubkey: walletPubkey, isSigner: false, isWritable: true }, // buyer_token_account placeholder
-          { pubkey: TOKEN_2022, isSigner: false, isWritable: false },
+          { pubkey: buyerTokenAccount, isSigner: false, isWritable: true },
+          { pubkey: TOKEN_2022_KEY, isSigner: false, isWritable: false },
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ],
         programId: PROGRAM_ID,
@@ -1403,6 +1407,16 @@ function renderCard(l) {
 
 function renderAll() {
   const grid = document.getElementById('grid');
+
+  if (onchainLaunches === null) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:80px 24px">
+        <div style="font-size:36px;margin-bottom:16px;animation:spin 1s linear infinite">⏳</div>
+        <style>@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}</style>
+        <p style="font-family:var(--mono);font-size:14px;color:var(--text-dim)">Loading launches from Solana...</p>
+      </div>`;
+    return;
+  }
   
   if (onchainLaunches.length === 0) {
     grid.innerHTML = `
@@ -1462,20 +1476,45 @@ function renderTokenDetail(id) {
   const phaseColor = isPresale ? 'var(--gold)' : isBonding ? 'var(--green)' : isGraduated ? 'var(--blue)' : 'var(--text-dim)';
 
   let tradePanel;
+  const now = Math.floor(Date.now()/1000);
+  const presaleExpired = isPresale && now > l.end_time;
+  const isCreator = walletPubkey && walletPubkey.toBase58() === l.creator;
+
   if (isPresale) {
-    tradePanel = `
-      <div class="trade-panel">
-        <h3>💰 Buy Presale</h3>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--gold);text-align:center;padding:12px;background:rgba(255,215,0,.05);border-radius:8px;margin-bottom:16px">
-          ⏱️ Presale ends: <span data-endtime="${l.end_time}" style="font-weight:700">--:--</span>
-        </div>
-        <div class="trade-input-group">
-          <label>SOL Amount</label>
-          <input type="number" id="detail-trade-amount" placeholder="0.00" step="0.01" min="0.001">
-        </div>
-        <button class="trade-submit presale-btn" onclick="detailTrade('${id}')">Buy Presale</button>
-        <div class="trade-info">Everyone gets the same price. Tokens distributed after presale ends.</div>
-      </div>`;
+    if (presaleExpired && isCreator) {
+      tradePanel = `
+        <div class="trade-panel">
+          <h3>⚡ Presale Ended</h3>
+          <div style="font-family:var(--mono);font-size:12px;color:#ff6644;text-align:center;padding:12px;background:rgba(255,68,68,.05);border-radius:8px;margin-bottom:16px">
+            ⏱️ Presale has ended
+          </div>
+          <p style="font-family:var(--inter);font-size:13px;color:var(--text-dim);margin-bottom:16px;text-align:center">As the creator, finalize the presale and start trading on the bonding curve.</p>
+          <button class="trade-submit presale-btn" onclick="finalizeAndStartTrading('${id}')" style="background:var(--gold);font-size:15px">⚡ Finalize & Start Trading</button>
+          <div class="trade-info">This will distribute tokens to presale buyers and open the bonding curve.</div>
+        </div>`;
+    } else if (presaleExpired) {
+      tradePanel = `
+        <div class="trade-panel">
+          <h3>⏱️ Presale Ended</h3>
+          <div style="font-family:var(--mono);font-size:12px;color:#ff6644;text-align:center;padding:12px;background:rgba(255,68,68,.05);border-radius:8px;margin-bottom:16px">
+            Presale has ended. Waiting for creator to finalize.
+          </div>
+        </div>`;
+    } else {
+      tradePanel = `
+        <div class="trade-panel">
+          <h3>💰 Buy Presale</h3>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--gold);text-align:center;padding:12px;background:rgba(255,215,0,.05);border-radius:8px;margin-bottom:16px">
+            ⏱️ Presale ends: <span data-endtime="${l.end_time}" style="font-weight:700">--:--</span>
+          </div>
+          <div class="trade-input-group">
+            <label>SOL Amount</label>
+            <input type="number" id="detail-trade-amount" placeholder="0.00" step="0.01" min="0.001">
+          </div>
+          <button class="trade-submit presale-btn" onclick="detailTrade('${id}')">Buy Presale</button>
+          <div class="trade-info">Everyone gets the same price. Tokens distributed after presale ends.</div>
+        </div>`;
+    }
   } else if (isBonding) {
     tradePanel = `
       <div class="trade-panel">
@@ -1567,21 +1606,172 @@ function renderTokenDetail(id) {
 function switchTradeTab(el, mode) {
   el.parentElement.querySelectorAll('.trade-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
+  tradeMode = mode;
   const btn = document.getElementById('detail-trade-btn');
+  const label = document.querySelector('#detail-trade-amount')?.parentElement?.querySelector('label');
   if (mode === 'sell') {
     btn.className = 'trade-submit sell-btn';
     btn.textContent = 'Sell';
+    if (label) label.textContent = 'Token Amount';
   } else {
     btn.className = 'trade-submit buy-btn';
     btn.textContent = 'Buy';
+    if (label) label.textContent = 'SOL Amount';
   }
 }
 
-function detailTrade(id) {
+const ATA_PROGRAM = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+const TOKEN_2022_KEY = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+
+function deriveATA(wallet, mint) {
+  return PublicKey.findProgramAddressSync(
+    [wallet.toBytes(), TOKEN_2022_KEY.toBytes(), mint.toBytes()],
+    ATA_PROGRAM
+  )[0];
+}
+
+async function detailTrade(id) {
   if (!walletPubkey) { toast('Connect your wallet first', 'warning'); return; }
   const l = onchainLaunches.find(x => x.address === id);
   if (!l) return;
-  openBuyModal(l);
+
+  if (l.status === STATUS_PRESALE) {
+    openBuyModal(l);
+    return;
+  }
+
+  if (l.status !== STATUS_BONDING_CURVE) {
+    toast('This token is graduated or closed — trade on Raydium', 'info');
+    return;
+  }
+
+  const amount = parseFloat(document.getElementById('detail-trade-amount').value);
+  if (!amount || amount <= 0) { toast('Enter a valid amount', 'warning'); return; }
+
+  const btn = document.getElementById('detail-trade-btn');
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = 'Sending...';
+
+  try {
+    const provider = await getProvider();
+    const mintKey = new PublicKey(l.mint);
+    const [launchPool] = findPDA([new TextEncoder().encode('launch_pool'), mintKey.toBytes()]);
+    const [vault] = findPDA([new TextEncoder().encode('vault'), launchPool.toBytes()]);
+    const [buyerRecord] = findPDA([new TextEncoder().encode('buyer_record'), launchPool.toBytes(), walletPubkey.toBytes()]);
+    const buyerTokenAccount = deriveATA(walletPubkey, mintKey);
+
+    let ix;
+    if (tradeMode === 'sell') {
+      const tokenAmount = Math.round(amount * 1e6); // 6 decimals
+      const disc = await getDiscriminator('sell_curve');
+      const data = new Uint8Array([...disc, ...encodeU64(tokenAmount)]);
+      ix = new TransactionInstruction({
+        keys: [
+          { pubkey: walletPubkey, isSigner: true, isWritable: true },
+          { pubkey: launchPool, isSigner: false, isWritable: true },
+          { pubkey: mintKey, isSigner: false, isWritable: true },
+          { pubkey: vault, isSigner: false, isWritable: true },
+          { pubkey: buyerRecord, isSigner: false, isWritable: true },
+          { pubkey: buyerTokenAccount, isSigner: false, isWritable: true },
+          { pubkey: TOKEN_2022_KEY, isSigner: false, isWritable: false },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: data,
+      });
+    } else {
+      const lamports = Math.round(amount * LAMPORTS_PER_SOL);
+      const disc = await getDiscriminator('buy_curve');
+      const data = new Uint8Array([...disc, ...encodeU64(lamports)]);
+      ix = new TransactionInstruction({
+        keys: [
+          { pubkey: walletPubkey, isSigner: true, isWritable: true },
+          { pubkey: launchPool, isSigner: false, isWritable: true },
+          { pubkey: mintKey, isSigner: false, isWritable: true },
+          { pubkey: vault, isSigner: false, isWritable: true },
+          { pubkey: buyerRecord, isSigner: false, isWritable: true },
+          { pubkey: buyerTokenAccount, isSigner: false, isWritable: true },
+          { pubkey: TOKEN_2022_KEY, isSigner: false, isWritable: false },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: data,
+      });
+    }
+
+    const tx = new Transaction().add(ix);
+    tx.feePayer = walletPubkey;
+    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    const signed = await provider.signTransaction(tx);
+    const sig = await connection.sendRawTransaction(signed.serialize());
+    await connection.confirmTransaction(sig, 'confirmed');
+    toast(`${tradeMode === 'sell' ? 'Sell' : 'Buy'} successful! TX: ${sig.slice(0,16)}...`, 'success', 8000);
+    loadOnchainLaunches();
+  } catch(e) {
+    console.error(e);
+    toast((e.message || String(e)).slice(0, 200), 'error', 8000);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+}
+
+async function finalizeAndStartTrading(id) {
+  if (!walletPubkey) { toast('Connect your wallet first', 'warning'); return; }
+  const l = onchainLaunches.find(x => x.address === id);
+  if (!l) return;
+  if (walletPubkey.toBase58() !== l.creator) { toast('Only the creator can finalize', 'warning'); return; }
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  try {
+    const provider = await getProvider();
+    const mintKey = new PublicKey(l.mint);
+    const [launchPool] = findPDA([new TextEncoder().encode('launch_pool'), mintKey.toBytes()]);
+    const [vault] = findPDA([new TextEncoder().encode('vault'), launchPool.toBytes()]);
+
+    const disc1 = await getDiscriminator('finalize_launch');
+    const ix1 = new TransactionInstruction({
+      keys: [
+        { pubkey: walletPubkey, isSigner: true, isWritable: true },
+        { pubkey: launchPool, isSigner: false, isWritable: true },
+        { pubkey: mintKey, isSigner: false, isWritable: true },
+        { pubkey: vault, isSigner: false, isWritable: true },
+        { pubkey: TOKEN_2022_KEY, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      programId: PROGRAM_ID,
+      data: new Uint8Array([...disc1]),
+    });
+
+    const disc2 = await getDiscriminator('start_bonding_curve');
+    const ix2 = new TransactionInstruction({
+      keys: [
+        { pubkey: walletPubkey, isSigner: true, isWritable: true },
+        { pubkey: launchPool, isSigner: false, isWritable: true },
+      ],
+      programId: PROGRAM_ID,
+      data: new Uint8Array([...disc2]),
+    });
+
+    const tx = new Transaction().add(ix1, ix2);
+    tx.feePayer = walletPubkey;
+    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    const signed = await provider.signTransaction(tx);
+    const sig = await connection.sendRawTransaction(signed.serialize());
+    await connection.confirmTransaction(sig, 'confirmed');
+    toast('Presale finalized & trading started! TX: ' + sig.slice(0,16) + '...', 'success', 8000);
+    loadOnchainLaunches();
+  } catch(e) {
+    console.error(e);
+    toast((e.message || String(e)).slice(0, 200), 'error', 8000);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚡ Finalize & Start Trading';
+  }
 }
 
 // ── Load real trades for activity feed ──
@@ -1791,12 +1981,20 @@ function drawBondingCurveChart(l, realPrices) {
 }
 
 // ── Countdown timers ──
+const refreshedTimers = new Set();
 setInterval(() => {
   const now = Math.floor(Date.now()/1000);
   document.querySelectorAll('[data-endtime]').forEach(el => {
     const end = parseInt(el.dataset.endtime);
     const diff = end - now;
-    if (diff <= 0) { el.textContent = '00:00'; el.style.color='#ff6644'; return; }
+    if (diff <= 0) {
+      el.textContent = '00:00'; el.style.color='#ff6644';
+      if (!refreshedTimers.has(end)) {
+        refreshedTimers.add(end);
+        setTimeout(() => loadOnchainLaunches(), 1500);
+      }
+      return;
+    }
     const m = Math.floor(diff / 60);
     const s = diff % 60;
     el.textContent = (m > 0 ? String(m).padStart(2,'0') + ':' : '') + String(s).padStart(2,'0');
@@ -1809,13 +2007,22 @@ document.querySelectorAll('.filter-chip').forEach(chip => {
   chip.addEventListener('click', () => {
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
+    if (!onchainLaunches || !onchainLaunches.length) return;
     const filter = chip.textContent.trim();
-    document.querySelectorAll('.card').forEach(card => {
-      if (filter.includes('All')) card.style.display = '';
-      else if (filter.includes('Presale')) card.style.display = card.classList.contains('presale') ? '' : 'none';
-      else if (filter.includes('Live')) card.style.display = card.classList.contains('live') ? '' : 'none';
-      else card.style.display = '';
-    });
+    let filtered = [...onchainLaunches];
+    if (filter.includes('Presale')) {
+      filtered = filtered.filter(l => l.status === STATUS_PRESALE);
+    } else if (filter.includes('Live')) {
+      filtered = filtered.filter(l => l.status === STATUS_BONDING_CURVE);
+    } else if (filter.includes('Top Gainers')) {
+      filtered.sort((a, b) => bondingCurvePrice(b.price_lamports, b.slope_scaled, b.tokens_sold_curve) - bondingCurvePrice(a.price_lamports, a.slope_scaled, a.tokens_sold_curve));
+    } else if (filter.includes('Most Raised')) {
+      filtered.sort((a, b) => (b.total_sol_collected + b.curve_sol_collected) - (a.total_sol_collected + a.curve_sol_collected));
+    } else if (filter.includes('Newest')) {
+      filtered.sort((a, b) => b.start_time - a.start_time);
+    }
+    const grid = document.getElementById('grid');
+    grid.innerHTML = filtered.map(l => renderCard(l)).join('');
   });
 });
 

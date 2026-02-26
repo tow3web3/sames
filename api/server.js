@@ -4,6 +4,9 @@ const multer = require('multer');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const nacl = require('tweetnacl');
+const bs58 = require('bs58');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = 3001;
@@ -13,6 +16,41 @@ if (!DATABASE_URL) { console.error('DATABASE_URL not set'); process.exit(1); }
 // ── Setup ──
 app.use(cors());
 app.use(express.json());
+
+// ── Rate Limiting ──
+const apiLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, message: { error: 'Too many requests' } });
+const chatLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: 'Too many messages' } });
+app.use('/api/', apiLimiter);
+
+// ── Wallet Signature Verification ──
+function verifySignature(wallet, message, signature) {
+  try {
+    const pubkey = bs58.decode(wallet);
+    const sig = bs58.decode(signature);
+    const msg = new TextEncoder().encode(message);
+    return nacl.sign.detached.verify(msg, sig, pubkey);
+  } catch(e) { return false; }
+}
+
+// Middleware: verify wallet ownership for write operations
+// Set REQUIRE_SIG=1 to enforce (disabled by default during dev)
+const REQUIRE_SIG = process.env.REQUIRE_SIG === '1';
+function requireWalletSig(req, res, next) {
+  if (!REQUIRE_SIG) return next();
+  const wallet = req.body?.wallet || req.params?.wallet;
+  const signature = req.headers['x-wallet-signature'];
+  const message = req.headers['x-wallet-message'];
+  if (!wallet || !signature || !message) {
+    return res.status(401).json({ error: 'Missing wallet signature. Include x-wallet-signature and x-wallet-message headers.' });
+  }
+  if (!message.includes(wallet)) {
+    return res.status(401).json({ error: 'Signature message must contain wallet address' });
+  }
+  if (!verifySignature(wallet, message, signature)) {
+    return res.status(401).json({ error: 'Invalid wallet signature' });
+  }
+  next();
+}
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 fs.mkdirSync(path.join(__dirname, 'uploads/pfp'), { recursive: true });
 fs.mkdirSync(path.join(__dirname, 'uploads/tokens'), { recursive: true });
@@ -58,7 +96,7 @@ app.post('/api/profiles/batch', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/profile/:wallet', async (req, res) => {
+app.post('/api/profile/:wallet', requireWalletSig, async (req, res) => {
   const { username, bio, website, twitter, telegram } = req.body;
   const wallet = req.params.wallet;
   try {
@@ -77,7 +115,7 @@ app.post('/api/profile/:wallet', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/profile/:wallet/pfp', upload.single('pfp'), async (req, res) => {
+app.post('/api/profile/:wallet/pfp', requireWalletSig, upload.single('pfp'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
   const pfp_url = `/uploads/pfp/${req.file.filename}`;
   try {
@@ -173,7 +211,7 @@ app.get('/api/chat/:tokenAddress', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/chat/:tokenAddress', async (req, res) => {
+app.post('/api/chat/:tokenAddress', chatLimiter, requireWalletSig, async (req, res) => {
   const { wallet, message } = req.body;
   if (!wallet || !message?.trim()) return res.status(400).json({ error: 'wallet and message required' });
   if (message.length > 500) return res.status(400).json({ error: 'Max 500 chars' });
