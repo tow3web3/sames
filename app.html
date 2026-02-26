@@ -320,7 +320,7 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
       <div class="hiw-step-num" style="color:var(--gold)">01</div>
       <h2><span class="step-emoji">⏱️</span> Phase 1 — Fair Presale <span style="font-size:14px;color:var(--gold);font-weight:400">(30 seconds)</span></h2>
       <ul>
-        <li>Creator sets token name, symbol, supply — launch goes live instantly</li>
+        <li>Creator sets token name and symbol — fixed <strong style="color:var(--gold)">1 billion</strong> supply, launch goes live instantly</li>
         <li>A <strong style="color:var(--gold)">30-second presale window</strong> opens</li>
         <li>Anyone can deposit SOL during this window</li>
         <li><strong style="color:var(--green)">Everyone gets the SAME price</strong> — no advantage to being first</li>
@@ -441,12 +441,16 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
     <input type="text" id="lm-name" placeholder="e.g. Samurai Cat" maxlength="32">
     <label>Symbol</label>
     <input type="text" id="lm-symbol" placeholder="e.g. SCAT" maxlength="10">
-    <label>Total Supply</label>
-    <input type="number" id="lm-supply" placeholder="e.g. 1000000000" min="1">
-    <label>Price per Token (lamports)</label>
-    <input type="number" id="lm-price" placeholder="e.g. 1000000 (= 0.001 SOL)" min="1">
+    <div style="margin-top:14px;padding:12px;background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.1);border-radius:8px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between;margin-bottom:6px">
+        <span>Supply</span><span style="color:var(--gold)">1,000,000,000</span>
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);display:flex;justify-content:space-between">
+        <span>Decimals</span><span style="color:var(--gold)">6</span>
+      </div>
+    </div>
     <button class="modal-submit" id="lm-submit" onclick="submitLaunch()">Create Launch</button>
-    <div class="modal-info">Mint address will be derived automatically. You need SOL for fees.</div>
+    <div class="modal-info">Fixed 1B supply. Fair presale opens immediately for 30 seconds.</div>
   </div>
 </div>
 
@@ -581,9 +585,9 @@ function closeLaunchModal() { document.getElementById('launchModal').classList.r
 async function submitLaunch() {
   const name = document.getElementById('lm-name').value.trim();
   const symbol = document.getElementById('lm-symbol').value.trim();
-  const supply = document.getElementById('lm-supply').value;
-  const price = document.getElementById('lm-price').value;
-  if (!name || !symbol || !supply || !price) { alert('Fill all fields'); return; }
+  if (!name || !symbol) { alert('Fill all fields'); return; }
+  const supply = 1_000_000_000_000_000; // 1B tokens with 6 decimals
+  const price = 1000; // 0.000001 SOL per token (starting price, bonding curve will increase)
   const btn = document.getElementById('lm-submit');
   btn.disabled = true; btn.textContent = 'Sending...';
   try {
