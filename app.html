@@ -1031,13 +1031,45 @@ async function submitLaunch() {
     const [vault] = findPDA([new TextEncoder().encode('vault'), launchPool.toBytes()]);
     const [marketRegistry] = findPDA([new TextEncoder().encode('market_registry'), launchPool.toBytes()]);
 
+    const TOKEN_2022 = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+    const DECIMALS = 6;
+
+    // ── Step 1: Create Token-2022 Mint account ──
+    // Mint account size: 82 bytes for basic mint
+    const MINT_SIZE = 82;
+    const mintRent = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
+
+    // Create account for the mint
+    const createMintAccountIx = SystemProgram.createAccount({
+      fromPubkey: walletPubkey,
+      newAccountPubkey: mint,
+      lamports: mintRent,
+      space: MINT_SIZE,
+      programId: TOKEN_2022,
+    });
+
+    // Initialize the mint (Token-2022 InitializeMint2 instruction)
+    // InitializeMint2 discriminator = 20, then decimals(1) + mintAuthority(32) + option(1) + freezeAuthority(32)
+    const initMintData = new Uint8Array(67);
+    initMintData[0] = 20; // InitializeMint2 instruction
+    initMintData[1] = DECIMALS;
+    initMintData.set(launchPool.toBytes(), 2); // mint authority = launch pool PDA
+    initMintData[34] = 0; // no freeze authority
+
+    const initMintIx = new TransactionInstruction({
+      keys: [{ pubkey: mint, isSigner: false, isWritable: true }],
+      programId: TOKEN_2022,
+      data: initMintData,
+    });
+
+    // ── Step 2: Create Launch (our program) ──
     const disc = await getDiscriminator('create_launch');
     const data = new Uint8Array([
       ...disc, ...encodeString(name), ...encodeString(symbol),
       ...encodeU64(supply), ...encodeU64(price),
     ]);
 
-    const ix = new TransactionInstruction({
+    const createLaunchIx = new TransactionInstruction({
       keys: [
         { pubkey: walletPubkey, isSigner: true, isWritable: true },
         { pubkey: mint, isSigner: false, isWritable: false },
@@ -1050,10 +1082,13 @@ async function submitLaunch() {
       data: data,
     });
 
-    const tx = new Transaction().add(ix);
+    // ── Build transaction with all 3 instructions ──
+    const tx = new Transaction().add(createMintAccountIx, initMintIx, createLaunchIx);
     tx.feePayer = walletPubkey;
     tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
+    // Mint keypair must sign (it's being created)
+    tx.partialSign(mintKp);
     const signed = await provider.signTransaction(tx);
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
