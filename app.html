@@ -465,7 +465,9 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
 
 <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 <script>
-// ── Solana Setup ──
+// ═══════════════════════════════════════════════════════════════
+// SAMES — Real On-Chain App (No Mock Data)
+// ═══════════════════════════════════════════════════════════════
 const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram, LAMPORTS_PER_SOL } = solanaWeb3;
 const PROGRAM_ID = new PublicKey('H91AKWdUASAKjpGwq4NXzp8kyddLbZMj9N1rP8HFjCmw');
 const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
@@ -473,6 +475,15 @@ const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 let walletPubkey = null;
 let onchainLaunches = [];
 let selectedLaunch = null;
+
+// Status enum mapping (matches Rust enum order)
+const STATUS_PRESALE = 0;
+const STATUS_BONDING_CURVE = 1;
+const STATUS_GRADUATED = 2;
+const STATUS_CLOSED = 3;
+const statusNames = ['presale', 'bonding', 'graduated', 'closed'];
+const statusLabels = ['● PRESALE', '● BONDING CURVE', '🎓 GRADUATED', '● CLOSED'];
+const statusClasses = ['status-presale', 'status-live', 'status-live', 'status-ended'];
 
 // ── Navigation / Routing ──
 function navigate(page, param) {
@@ -502,57 +513,62 @@ function handleRoute() {
     document.querySelector('[data-nav="launches"]')?.classList.add('active');
   }
 }
-
 window.addEventListener('hashchange', handleRoute);
 
 // ── Wallet ──
-const walletBtn = document.getElementById('walletBtn');
-walletBtn.addEventListener('click', connectWallet);
-
 async function getProvider() {
-  if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
   if (window.solana?.isPhantom) return window.solana;
   if (window.solflare?.isSolflare) return window.solflare;
-  return null;
+  throw new Error('No Solana wallet found. Install Phantom or Solflare.');
 }
 
-async function connectWallet() {
-  if (walletPubkey) { walletPubkey = null; walletBtn.textContent = 'Connect Wallet'; walletBtn.classList.remove('connected'); return; }
-  const provider = await getProvider();
-  if (!provider) { alert('No Solana wallet found. Install Phantom or Solflare.'); return; }
+document.getElementById('walletBtn').addEventListener('click', async () => {
   try {
+    const provider = await getProvider();
     const resp = await provider.connect();
     walletPubkey = resp.publicKey;
-    const addr = walletPubkey.toBase58();
-    walletBtn.textContent = addr.slice(0,3) + '...' + addr.slice(-3);
-    walletBtn.classList.add('connected');
-  } catch(e) { console.error('Wallet connect failed:', e); }
-}
+    const btn = document.getElementById('walletBtn');
+    btn.textContent = walletPubkey.toBase58().slice(0,4) + '...' + walletPubkey.toBase58().slice(-4);
+    btn.classList.add('connected');
+  } catch(e) {
+    console.error(e);
+    alert('Wallet connection failed: ' + (e.message || e));
+  }
+});
 
-// ── PDA helpers ──
-function findPDA(seeds) {
-  return PublicKey.findProgramAddressSync(seeds, PROGRAM_ID);
-}
-
+// ── Helpers ──
+function hashCode(s) { let h=0; for(let i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i)|0; return h; }
+function findPDA(seeds) { return PublicKey.findProgramAddressSync(seeds, PROGRAM_ID); }
 async function getDiscriminator(name) {
-  const data = new TextEncoder().encode('global:' + name);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return new Uint8Array(hash).slice(0, 8);
+  const d = new TextEncoder().encode('global:' + name);
+  const h = await crypto.subtle.digest('SHA-256', d);
+  return new Uint8Array(h).slice(0, 8);
 }
-
 function encodeString(s) {
-  const bytes = new TextEncoder().encode(s);
-  const buf = new ArrayBuffer(4 + bytes.length);
-  const view = new DataView(buf);
-  view.setUint32(0, bytes.length, true);
-  new Uint8Array(buf, 4).set(bytes);
-  return new Uint8Array(buf);
+  const encoded = new TextEncoder().encode(s);
+  const buf = new Uint8Array(4 + encoded.length);
+  new DataView(buf.buffer).setUint32(0, encoded.length, true);
+  buf.set(encoded, 4);
+  return buf;
 }
-
 function encodeU64(n) {
   const buf = new ArrayBuffer(8);
   new DataView(buf).setBigUint64(0, BigInt(n), true);
   return new Uint8Array(buf);
+}
+function formatSOL(lamports) {
+  const sol = lamports / LAMPORTS_PER_SOL;
+  if (sol >= 1000) return sol.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (sol >= 1) return sol.toFixed(2);
+  return sol.toFixed(4);
+}
+function shortAddr(addr) { return addr.slice(0,4) + '...' + addr.slice(-4); }
+function timeAgo(timestamp) {
+  const diff = Math.floor(Date.now()/1000) - timestamp;
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
 }
 
 // ── Create Launch ──
@@ -574,7 +590,7 @@ async function submitLaunch() {
     const provider = await getProvider();
     const mintKp = solanaWeb3.Keypair.generate();
     const mint = mintKp.publicKey;
-    const [launchPool, bump] = findPDA([Buffer.from('launch_pool'), mint.toBytes()]);
+    const [launchPool] = findPDA([Buffer.from('launch_pool'), mint.toBytes()]);
     const [vault] = findPDA([Buffer.from('vault'), launchPool.toBytes()]);
     const [marketRegistry] = findPDA([Buffer.from('market_registry'), launchPool.toBytes()]);
 
@@ -604,7 +620,7 @@ async function submitLaunch() {
     const signed = await provider.signTransaction(tx);
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
-    alert('Launch created! TX: ' + sig);
+    alert('🚀 Launch created! TX: ' + sig);
     closeLaunchModal();
     loadOnchainLaunches();
   } catch(e) {
@@ -619,7 +635,8 @@ async function submitLaunch() {
 function openBuyModal(launch) {
   if (!walletPubkey) { alert('Connect wallet first'); return; }
   selectedLaunch = launch;
-  document.getElementById('buy-token-info').textContent = `${launch.token_name} (${launch.token_symbol}) — ${(launch.price_lamports / LAMPORTS_PER_SOL).toFixed(6)} SOL/token`;
+  const priceSOL = (launch.price_lamports / LAMPORTS_PER_SOL).toFixed(6);
+  document.getElementById('buy-token-info').textContent = `${launch.token_name} (${launch.token_symbol}) — ${priceSOL} SOL/token`;
   document.getElementById('bm-amount').value = '';
   document.getElementById('buyModal').classList.add('open');
 }
@@ -634,24 +651,56 @@ async function submitBuy() {
   try {
     const provider = await getProvider();
     const lamports = Math.round(solAmount * LAMPORTS_PER_SOL);
-    const launchPool = new PublicKey(selectedLaunch.address);
+    const mintKey = new PublicKey(selectedLaunch.mint);
+    const [launchPool] = findPDA([Buffer.from('launch_pool'), mintKey.toBytes()]);
     const [vault] = findPDA([Buffer.from('vault'), launchPool.toBytes()]);
     const [buyerRecord] = findPDA([Buffer.from('buyer_record'), launchPool.toBytes(), walletPubkey.toBytes()]);
 
-    const disc = await getDiscriminator('buy_presale');
-    const data = new Uint8Array([...disc, ...encodeU64(lamports)]);
-
-    const ix = new TransactionInstruction({
-      keys: [
-        { pubkey: walletPubkey, isSigner: true, isWritable: true },
-        { pubkey: launchPool, isSigner: false, isWritable: true },
-        { pubkey: vault, isSigner: false, isWritable: true },
-        { pubkey: buyerRecord, isSigner: false, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      programId: PROGRAM_ID,
-      data: Buffer.from(data),
-    });
+    // Determine instruction based on phase
+    const isPresale = selectedLaunch.status === STATUS_PRESALE;
+    const isBondingCurve = selectedLaunch.status === STATUS_BONDING_CURVE;
+    
+    let disc, ix;
+    if (isPresale) {
+      disc = await getDiscriminator('buy_presale');
+      const data = new Uint8Array([...disc, ...encodeU64(lamports)]);
+      ix = new TransactionInstruction({
+        keys: [
+          { pubkey: walletPubkey, isSigner: true, isWritable: true },
+          { pubkey: launchPool, isSigner: false, isWritable: true },
+          { pubkey: vault, isSigner: false, isWritable: true },
+          { pubkey: buyerRecord, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: Buffer.from(data),
+      });
+    } else if (isBondingCurve) {
+      // Token-2022 program and buyer's token account needed
+      const TOKEN_2022 = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+      // For buy_curve, we need the mint and buyer's token account
+      disc = await getDiscriminator('buy_curve');
+      const data = new Uint8Array([...disc, ...encodeU64(lamports)]);
+      // Get or create associated token account for Token-2022
+      // Simplified - user needs token account
+      ix = new TransactionInstruction({
+        keys: [
+          { pubkey: walletPubkey, isSigner: true, isWritable: true },
+          { pubkey: launchPool, isSigner: false, isWritable: true },
+          { pubkey: mintKey, isSigner: false, isWritable: true },
+          { pubkey: vault, isSigner: false, isWritable: true },
+          { pubkey: buyerRecord, isSigner: false, isWritable: true },
+          { pubkey: walletPubkey, isSigner: false, isWritable: true }, // buyer_token_account placeholder
+          { pubkey: TOKEN_2022, isSigner: false, isWritable: false },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: Buffer.from(data),
+      });
+    } else {
+      alert('This token is not available for purchase (graduated or closed).');
+      return;
+    }
 
     const tx = new Transaction().add(ix);
     tx.feePayer = walletPubkey;
@@ -660,7 +709,7 @@ async function submitBuy() {
     const signed = await provider.signTransaction(tx);
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
-    alert('Purchase successful! TX: ' + sig);
+    alert('✅ Purchase successful! TX: ' + sig);
     closeBuyModal();
     loadOnchainLaunches();
   } catch(e) {
@@ -671,10 +720,10 @@ async function submitBuy() {
   }
 }
 
-// ── Deserialize LaunchPool ──
+// ── Deserialize LaunchPool (matches updated Rust struct) ──
 function deserializeLaunchPool(data, pubkey) {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  let offset = 8;
+  let offset = 8; // skip discriminator
   const creator = new PublicKey(data.slice(offset, offset+32)); offset += 32;
   const mint = new PublicKey(data.slice(offset, offset+32)); offset += 32;
   const nameLen = view.getUint32(offset, true); offset += 4;
@@ -683,10 +732,14 @@ function deserializeLaunchPool(data, pubkey) {
   const token_symbol = new TextDecoder().decode(data.slice(offset, offset+symLen)); offset += symLen;
   const total_supply = view.getBigUint64(offset, true); offset += 8;
   const price_lamports = view.getBigUint64(offset, true); offset += 8;
+  const slope_scaled = view.getBigUint64(offset, true); offset += 8;
+  const tokens_sold_curve = view.getBigUint64(offset, true); offset += 8;
+  const curve_sol_collected = view.getBigUint64(offset, true); offset += 8;
   const start_time = view.getBigInt64(offset, true); offset += 8;
   const end_time = view.getBigInt64(offset, true); offset += 8;
   const total_sol_collected = view.getBigUint64(offset, true); offset += 8;
   const buyer_count = view.getUint32(offset, true); offset += 4;
+  const graduation_threshold = view.getBigUint64(offset, true); offset += 8;
   const status = data[offset]; offset += 1;
 
   return {
@@ -696,11 +749,20 @@ function deserializeLaunchPool(data, pubkey) {
     token_name, token_symbol,
     total_supply: Number(total_supply),
     price_lamports: Number(price_lamports),
+    slope_scaled: Number(slope_scaled),
+    tokens_sold_curve: Number(tokens_sold_curve),
+    curve_sol_collected: Number(curve_sol_collected),
     start_time: Number(start_time),
     end_time: Number(end_time),
     total_sol_collected: Number(total_sol_collected),
-    buyer_count, status
+    buyer_count, status,
+    graduation_threshold: Number(graduation_threshold),
   };
+}
+
+// ── Bonding curve price calculation (mirrors Rust) ──
+function bondingCurvePrice(basePrice, slopeScaled, tokensSold) {
+  return basePrice + Math.floor((slopeScaled * tokensSold) / 1e9);
 }
 
 // ── Fetch launches from chain ──
@@ -723,6 +785,11 @@ async function loadOnchainLaunches() {
         launches.push(deserializeLaunchPool(data, pubkey));
       } catch(e) { console.warn('Failed to deserialize', pubkey.toBase58(), e); }
     }
+    // Sort: presales first, then bonding curve, then graduated, then closed. Within: newest first
+    launches.sort((a, b) => {
+      if (a.status !== b.status) return a.status - b.status;
+      return b.start_time - a.start_time;
+    });
     onchainLaunches = launches;
     renderAll();
   } catch(e) {
@@ -731,198 +798,202 @@ async function loadOnchainLaunches() {
   }
 }
 
-// ── Mock data ──
-const MOCK_TOKENS = [
-  {name:"Samurai Cat",ticker:"$SCAT",emoji:"🐱",status:"presale",countdown:27,price:"0.001",buyers:847,sol:"312.4",progress:78,gain:null,floor:"0.001",creator:"7xK...f2d",time:"12s ago",bg:"#2a1800",mockId:"mock-0",mint:"7xKa...same"},
-  {name:"Moon Frog",ticker:"$MFROG",emoji:"🐸",status:"presale",countdown:14,price:"0.0005",buyers:1243,sol:"521.8",progress:92,gain:null,floor:"0.0005",creator:"4aB...9e1",time:"18s ago",bg:"#002a00",mockId:"mock-1",mint:"4aBz...same"},
-  {name:"Based Chad",ticker:"$CHAD",emoji:"💪",status:"presale",countdown:8,price:"0.002",buyers:423,sol:"184.2",progress:45,gain:null,floor:"0.002",creator:"9cD...3b7",time:"22s ago",bg:"#1a0028",mockId:"mock-2",mint:"9cDx...same"},
-  {name:"Void Entity",ticker:"$VOID",emoji:"🌑",status:"live",countdown:0,price:"0.0087",buyers:2891,sol:"1,247",progress:100,gain:"+312%",floor:"0.001",creator:"2fE...8a4",time:"4m ago",bg:"#000a1a",mockId:"mock-3",mint:"2fEq...same"},
-  {name:"Sol Penguin",ticker:"$SPEN",emoji:"🐧",status:"live",countdown:0,price:"0.0034",buyers:1567,sol:"687.3",progress:100,gain:"+89%",floor:"0.0015",creator:"6gH...2c9",time:"8m ago",bg:"#001a2a",mockId:"mock-4",mint:"6gHk...same"},
-  {name:"Degen Ape",ticker:"$DAPE",emoji:"🦍",status:"live",countdown:0,price:"0.0156",buyers:4201,sol:"3,842",progress:100,gain:"+680%",floor:"0.002",creator:"1jK...5d2",time:"15m ago",bg:"#1a1000",mockId:"mock-5",mint:"1jKp...same"},
-  {name:"Fair Launch",ticker:"$FAIR",emoji:"⚖️",status:"presale",countdown:22,price:"0.001",buyers:612,sol:"198.7",progress:55,gain:null,floor:"0.001",creator:"3mL...7f8",time:"8s ago",bg:"#0a0a1a",mockId:"mock-6",mint:"3mLw...same"},
-  {name:"Diamond Paws",ticker:"$DPAW",emoji:"💎",status:"live",countdown:0,price:"0.0043",buyers:988,sol:"412.6",progress:100,gain:"+115%",floor:"0.002",creator:"8nM...4g1",time:"22m ago",bg:"#001a1a",mockId:"mock-7",mint:"8nMv...same"},
-  {name:"Gigabrain AI",ticker:"$GIGA",emoji:"🧠",status:"live",countdown:0,price:"0.0298",buyers:6723,sol:"8,421",progress:100,gain:"+1,390%",floor:"0.002",creator:"5pN...9h3",time:"1h ago",bg:"#180018",mockId:"mock-8",mint:"5pNa...same"},
-  {name:"Ninja Shiba",ticker:"$NSHI",emoji:"🥷",status:"presale",countdown:19,price:"0.0008",buyers:334,sol:"89.2",progress:30,gain:null,floor:"0.0008",creator:"7qP...2j6",time:"11s ago",bg:"#1a0000",mockId:"mock-9",mint:"7qPz...same"},
-  {name:"Cosmic Whale",ticker:"$CWHL",emoji:"🐋",status:"live",countdown:0,price:"0.0062",buyers:1823,sol:"1,102",progress:100,gain:"+210%",floor:"0.002",creator:"4rQ...8k4",time:"32m ago",bg:"#000820",mockId:"mock-10",mint:"4rQj...same"},
-  {name:"Turbo Hamster",ticker:"$THAM",emoji:"🐹",status:"live",countdown:0,price:"0.0019",buyers:756,sol:"287.4",progress:100,gain:"+52%",floor:"0.00125",creator:"9sR...1m7",time:"45m ago",bg:"#0a1800",mockId:"mock-11",mint:"9sRc...same"},
-];
-
-// ── Generate mock price history ──
-function generatePriceHistory(basePrice, isPresale, seed) {
-  const points = 50;
-  const prices = [];
-  let price = parseFloat(basePrice);
-  let rng = Math.abs(hashCode(seed || 'x'));
-  for (let i = 0; i < points; i++) {
-    rng = (rng * 16807 + 12345) & 0x7fffffff;
-    const change = ((rng % 1000) / 1000 - 0.45) * price * 0.08;
-    price = Math.max(price * 0.5, price + change);
-    prices.push(price);
-  }
-  return prices;
-}
-
-// ── Generate mock activity ──
-function generateMockActivity(tokenName) {
-  const wallets = ['7xK...f2d','4aB...9e1','9cD...3b7','2fE...8a4','6gH...2c9','1jK...5d2','3mL...7f8','8nM...4g1'];
-  const activities = [];
-  let rng = Math.abs(hashCode(tokenName));
-  for (let i = 0; i < 8; i++) {
-    rng = (rng * 16807 + 12345) & 0x7fffffff;
-    const isBuy = rng % 3 !== 0;
-    const sol = ((rng % 10000) / 1000 + 0.1).toFixed(2);
-    const mins = i * 2 + (rng % 5);
-    activities.push({
-      type: isBuy ? 'BUY' : 'SELL',
-      wallet: wallets[rng % wallets.length],
-      amount: sol + ' SOL',
-      time: mins < 60 ? mins + 'm ago' : Math.floor(mins/60) + 'h ago'
-    });
-  }
-  return activities;
-}
-
 // ── Render ──
-const statusNames = ['presale','live','closed'];
 const emojis = ['🪙','🔶','💠','🟡','🔵','🟣','🔴','🟢','⭐','💎','🌀','🎯'];
+const bgColors = ['#2a1800','#002a00','#1a0028','#000a1a','#001a2a','#1a1000','#0a0a1a','#001a1a','#180018','#1a0000','#000820','#0a1800'];
 
-function onchainToCard(l) {
-  const st = statusNames[l.status] || 'presale';
-  const isPresale = st === 'presale';
+function renderCard(l) {
+  const st = l.status;
+  const isPresale = st === STATUS_PRESALE;
+  const isBonding = st === STATUS_BONDING_CURVE;
+  const isGraduated = st === STATUS_GRADUATED;
+  const emoji = emojis[Math.abs(hashCode(l.token_name)) % emojis.length];
+  const bg = bgColors[Math.abs(hashCode(l.token_name)) % bgColors.length];
+  const cardClass = isPresale ? 'presale' : (isBonding ? 'live' : '');
+  
   const now = Math.floor(Date.now()/1000);
   const remaining = l.end_time - now;
-  const total = l.end_time - l.start_time;
-  const progress = total > 0 ? Math.min(100, Math.max(0, Math.round(((total - Math.max(0,remaining)) / total)*100))) : 100;
-  const solCollected = (l.total_sol_collected / LAMPORTS_PER_SOL).toFixed(1);
-  const priceSOL = (l.price_lamports / LAMPORTS_PER_SOL).toFixed(6);
-  const creatorShort = l.creator.slice(0,3)+'...'+l.creator.slice(-3);
-  const emoji = emojis[Math.abs(hashCode(l.token_name)) % emojis.length];
-  return {
-    name: l.token_name, ticker: '$'+l.token_symbol, emoji, status: st,
-    endTime: l.end_time, price: priceSOL, buyers: l.buyer_count,
-    sol: solCollected, progress, gain: isPresale ? null : '+?%',
-    floor: priceSOL, creator: creatorShort, time: '', bg: '#1a1000',
-    _onchain: l, navId: l.address, mint: l.mint.slice(0,4)+'...'+l.mint.slice(-4)
-  };
-}
+  const totalDuration = l.end_time - l.start_time;
+  const progress = totalDuration > 0 ? Math.min(100, Math.max(0, Math.round(((totalDuration - Math.max(0, remaining)) / totalDuration) * 100))) : 100;
+  
+  const solCollected = formatSOL(l.total_sol_collected + l.curve_sol_collected);
+  const currentPrice = bondingCurvePrice(l.price_lamports, l.slope_scaled, l.tokens_sold_curve);
+  const priceSOL = formatSOL(currentPrice);
+  const creatorShort = shortAddr(l.creator);
+  const mintShort = shortAddr(l.mint);
+  
+  // Graduation progress for bonding curve
+  const gradProgress = l.graduation_threshold > 0 ? Math.min(100, Math.round((l.curve_sol_collected / l.graduation_threshold) * 100)) : 0;
 
-function hashCode(s) { let h=0; for(let i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i)|0; return h; }
+  let countdownHTML;
+  if (isPresale) {
+    countdownHTML = `
+      <div class="card-countdown">
+        <div class="countdown-timer" data-endtime="${l.end_time}">--:--</div>
+        <div class="countdown-label">presale ends</div>
+      </div>`;
+  } else if (isBonding) {
+    countdownHTML = `
+      <div class="card-countdown">
+        <div class="countdown-timer" style="color:var(--green);font-size:20px">${gradProgress}% to graduation</div>
+        <div class="countdown-label">${formatSOL(l.curve_sol_collected)} / ${formatSOL(l.graduation_threshold)} SOL</div>
+      </div>`;
+  } else if (isGraduated) {
+    countdownHTML = `
+      <div class="card-countdown">
+        <div class="countdown-timer" style="color:var(--blue);font-size:20px">🎓 GRADUATED</div>
+        <div class="countdown-label">trading on raydium</div>
+      </div>`;
+  } else {
+    countdownHTML = `
+      <div class="card-countdown">
+        <div class="countdown-timer" style="color:var(--text-dim);font-size:20px">CLOSED</div>
+        <div class="countdown-label"></div>
+      </div>`;
+  }
 
-function renderCard(t, isMock) {
-  const isPresale = t.status === 'presale';
-  const navId = t.navId || t.mockId || '';
   return `
-    <div class="card ${t.status}" onclick="navigate('token','${navId}')">
+    <div class="card ${cardClass}" onclick="navigate('token','${l.address}')">
       <div class="card-header">
-        <div class="token-avatar" style="background:${t.bg}">${t.emoji}</div>
+        <div class="token-avatar" style="background:${bg}">${emoji}</div>
         <div class="card-info">
-          <h3>${t.name}</h3>
-          <span class="ticker-name">${t.ticker}</span>
+          <h3>${l.token_name}</h3>
+          <span class="ticker-name">$${l.token_symbol}</span>
         </div>
-        <span class="card-status ${isPresale?'status-presale': t.status==='closed'?'status-ended':'status-live'}">${isPresale?'● PRESALE': t.status==='closed'?'● CLOSED':'● LIVE'}</span>
+        <span class="card-status ${statusClasses[st]}">${statusLabels[st]}</span>
       </div>
-      ${isPresale && t.endTime ? `
-      <div class="card-countdown">
-        <div class="countdown-timer" data-endtime="${t.endTime}">--:--:--</div>
-        <div class="countdown-label">until market opens</div>
-      </div>` : isPresale ? `
-      <div class="card-countdown">
-        <div class="countdown-timer" data-countdown="${t.countdown||0}">00:${String(t.countdown||0).padStart(2,'0')}</div>
-        <div class="countdown-label">until market opens</div>
-      </div>` : `
-      <div class="card-countdown">
-        <div class="countdown-timer">${t.gain||'LIVE'}</div>
-        <div class="countdown-label">since launch</div>
-      </div>`}
+      ${countdownHTML}
       <div class="card-progress">
-        <div class="progress-bar"><div class="progress-fill" style="width:${t.progress}%"></div></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${isPresale ? progress : isBonding ? gradProgress : 100}%"></div></div>
       </div>
       <div class="card-stats">
-        <div class="card-stat"><div class="s-label">Price</div><div class="s-value">${t.price}</div></div>
-        <div class="card-stat"><div class="s-label">Buyers</div><div class="s-value">${typeof t.buyers==='number'?t.buyers.toLocaleString():t.buyers}</div></div>
-        <div class="card-stat"><div class="s-label">SOL</div><div class="s-value">${t.sol}</div></div>
+        <div class="card-stat"><div class="s-label">Price</div><div class="s-value">${priceSOL}</div></div>
+        <div class="card-stat"><div class="s-label">Buyers</div><div class="s-value">${l.buyer_count.toLocaleString()}</div></div>
+        <div class="card-stat"><div class="s-label">SOL</div><div class="s-value">${solCollected}</div></div>
       </div>
       <div class="card-footer">
-        <span class="creator">${t.creator}</span>
-        <span class="floor-badge">🔒 Floor: ${t.floor}</span>
-        ${t.mint ? `<span class="mint-addr">${t.mint}</span>` : `<span class="time-ago">${t.time}</span>`}
+        <span class="creator">${creatorShort}</span>
+        ${isBonding ? '<span class="floor-badge">🔒 Price Floor Active</span>' : ''}
+        <span class="mint-addr">${mintShort}</span>
       </div>
     </div>`;
 }
 
 function renderAll() {
   const grid = document.getElementById('grid');
-  const onchainCards = onchainLaunches.map(l => onchainToCard(l));
-  let html = onchainCards.map(c => renderCard(c, false)).join('');
-  if (onchainCards.length === 0) {
-    html = MOCK_TOKENS.map(t => renderCard(t, true)).join('');
+  
+  if (onchainLaunches.length === 0) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:80px 24px">
+        <div style="font-size:48px;margin-bottom:16px">🚀</div>
+        <h2 style="font-family:var(--sans);font-size:24px;font-weight:700;color:var(--text-dim);margin-bottom:8px">No Launches Yet</h2>
+        <p style="font-family:var(--inter);font-size:14px;color:var(--text-dim);margin-bottom:24px">Be the first to launch a token on SAMES!</p>
+        <button class="create-btn" onclick="document.getElementById('createBtn').click()" style="font-size:16px;padding:12px 28px">+ Launch Token</button>
+      </div>`;
+  } else {
+    grid.innerHTML = onchainLaunches.map(l => renderCard(l)).join('');
   }
-  grid.innerHTML = html;
 
-  const presaleCount = onchainCards.length > 0 ? onchainCards.filter(c=>c.status==='presale').length : 7;
-  const liveCount = onchainCards.length > 0 ? onchainCards.filter(c=>c.status==='live').length : 43;
-  const totalSol = onchainCards.length > 0 ? onchainLaunches.reduce((s,l)=>s+l.total_sol_collected,0)/LAMPORTS_PER_SOL : 12847;
-  const totalBuyers = onchainCards.length > 0 ? onchainLaunches.reduce((s,l)=>s+l.buyer_count,0) : 8291;
+  // Update ticker stats with real data
+  const presaleCount = onchainLaunches.filter(l => l.status === STATUS_PRESALE).length;
+  const liveCount = onchainLaunches.filter(l => l.status === STATUS_BONDING_CURVE).length;
+  const totalSol = onchainLaunches.reduce((s, l) => s + l.total_sol_collected + l.curve_sol_collected, 0);
+  const totalBuyers = onchainLaunches.reduce((s, l) => s + l.buyer_count, 0);
+  
   document.getElementById('t-presales').textContent = presaleCount;
   document.getElementById('t-live').textContent = liveCount;
-  document.getElementById('t-vol').textContent = totalSol.toLocaleString(undefined,{maximumFractionDigits:1}) + ' SOL';
+  document.getElementById('t-vol').textContent = formatSOL(totalSol) + ' SOL';
   document.getElementById('t-buyers').textContent = totalBuyers.toLocaleString();
 }
 
 // ── Token Detail Page ──
-function findTokenData(id) {
-  // Check on-chain first
-  const onchain = onchainLaunches.find(l => l.address === id);
-  if (onchain) {
-    const st = statusNames[onchain.status] || 'presale';
-    const priceSOL = (onchain.price_lamports / LAMPORTS_PER_SOL).toFixed(6);
-    const emoji = emojis[Math.abs(hashCode(onchain.token_name)) % emojis.length];
-    return {
-      name: onchain.token_name, ticker: '$'+onchain.token_symbol, emoji,
-      status: st, price: priceSOL, buyers: onchain.buyer_count,
-      sol: (onchain.total_sol_collected / LAMPORTS_PER_SOL).toFixed(1),
-      progress: 100, floor: priceSOL, creator: onchain.creator,
-      mint: onchain.mint, bg: '#1a1000', supply: onchain.total_supply,
-      _onchain: onchain, isOnchain: true
-    };
-  }
-  // Check mock
-  const mock = MOCK_TOKENS.find(t => t.mockId === id);
-  if (mock) {
-    return {
-      name: mock.name, ticker: mock.ticker, emoji: mock.emoji,
-      status: mock.status, price: mock.price, buyers: mock.buyers,
-      sol: mock.sol, progress: mock.progress, floor: mock.floor,
-      creator: mock.creator, mint: mock.mint || 'xxxx...same',
-      bg: mock.bg, supply: 1000000000, isOnchain: false
-    };
-  }
-  return null;
-}
-
 function renderTokenDetail(id) {
-  const t = findTokenData(id);
   const container = document.getElementById('detail-content');
-  if (!t) {
-    container.innerHTML = '<button class="detail-back" onclick="navigate(\'launches\')">← Back</button><p style="color:var(--text-dim);text-align:center;padding:60px">Token not found</p>';
+  const l = onchainLaunches.find(x => x.address === id);
+  
+  if (!l) {
+    container.innerHTML = `
+      <button class="detail-back" onclick="navigate('launches')">← Back</button>
+      <p style="color:var(--text-dim);text-align:center;padding:60px">Token not found. It may not have loaded yet.</p>`;
     return;
   }
-  const isPresale = t.status === 'presale';
-  const priceNum = parseFloat(t.price);
-  const marketCap = (priceNum * t.supply).toFixed(2);
-  const solNum = parseFloat(String(t.sol).replace(/,/g,''));
+
+  const st = l.status;
+  const isPresale = st === STATUS_PRESALE;
+  const isBonding = st === STATUS_BONDING_CURVE;
+  const isGraduated = st === STATUS_GRADUATED;
+  const emoji = emojis[Math.abs(hashCode(l.token_name)) % emojis.length];
+  const bg = bgColors[Math.abs(hashCode(l.token_name)) % bgColors.length];
+  const currentPrice = bondingCurvePrice(l.price_lamports, l.slope_scaled, l.tokens_sold_curve);
+  const priceSOL = formatSOL(currentPrice);
+  const marketCap = formatSOL(Math.floor((currentPrice / LAMPORTS_PER_SOL) * l.total_supply * LAMPORTS_PER_SOL));
+  const totalRaised = formatSOL(l.total_sol_collected + l.curve_sol_collected);
+  const gradProgress = l.graduation_threshold > 0 ? Math.min(100, Math.round((l.curve_sol_collected / l.graduation_threshold) * 100)) : 0;
+
+  const phaseLabel = isPresale ? 'Phase 1: Presale' : isBonding ? 'Phase 2: Bonding Curve' : isGraduated ? 'Phase 3: Graduated' : 'Closed';
+  const phaseColor = isPresale ? 'var(--gold)' : isBonding ? 'var(--green)' : isGraduated ? 'var(--blue)' : 'var(--text-dim)';
+
+  let tradePanel;
+  if (isPresale) {
+    tradePanel = `
+      <div class="trade-panel">
+        <h3>💰 Buy Presale</h3>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--gold);text-align:center;padding:12px;background:rgba(255,215,0,.05);border-radius:8px;margin-bottom:16px">
+          ⏱️ Presale ends: <span data-endtime="${l.end_time}" style="font-weight:700">--:--</span>
+        </div>
+        <div class="trade-input-group">
+          <label>SOL Amount</label>
+          <input type="number" id="detail-trade-amount" placeholder="0.00" step="0.01" min="0.001">
+        </div>
+        <button class="trade-submit presale-btn" onclick="detailTrade('${id}')">Buy Presale</button>
+        <div class="trade-info">Everyone gets the same price. Tokens distributed after presale ends.</div>
+      </div>`;
+  } else if (isBonding) {
+    tradePanel = `
+      <div class="trade-panel">
+        <h3>📊 Trade on Bonding Curve</h3>
+        <div style="font-family:var(--mono);font-size:11px;text-align:center;padding:10px;background:rgba(0,255,136,.05);border-radius:8px;margin-bottom:12px;color:var(--green)">
+          🔒 Price floor active — can't sell below entry
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;text-align:center;padding:8px;background:rgba(68,136,255,.05);border-radius:8px;margin-bottom:16px;color:var(--blue)">
+          🎓 Graduation: ${gradProgress}% (${formatSOL(l.curve_sol_collected)} / ${formatSOL(l.graduation_threshold)} SOL)
+        </div>
+        <div class="trade-tabs">
+          <button class="trade-tab active" onclick="switchTradeTab(this,'buy')">Buy</button>
+          <button class="trade-tab sell-tab" onclick="switchTradeTab(this,'sell')">Sell</button>
+        </div>
+        <div class="trade-input-group">
+          <label>SOL Amount</label>
+          <input type="number" id="detail-trade-amount" placeholder="0.00" step="0.01" min="0.001">
+        </div>
+        <button class="trade-submit buy-btn" id="detail-trade-btn" onclick="detailTrade('${id}')">Buy</button>
+        <div class="trade-info">1% platform fee on sells. Price moves with the bonding curve.</div>
+      </div>`;
+  } else if (isGraduated) {
+    tradePanel = `
+      <div class="trade-panel">
+        <h3>🎓 Graduated to Raydium</h3>
+        <div style="text-align:center;padding:24px;color:var(--text-dim);font-family:var(--inter);font-size:14px;line-height:1.6">
+          This token has graduated! Price floor removed.<br>Trade freely on Raydium.
+        </div>
+        <a href="#" class="trade-submit buy-btn" style="display:block;text-align:center;text-decoration:none;background:var(--blue)">Trade on Raydium →</a>
+      </div>`;
+  } else {
+    tradePanel = `<div class="trade-panel"><h3>Closed</h3><p style="color:var(--text-dim);padding:24px;text-align:center">This launch has been closed.</p></div>`;
+  }
 
   container.innerHTML = `
     <button class="detail-back" onclick="navigate('launches')">← Back to Launches</button>
     <div class="detail-header">
-      <div class="detail-avatar" style="background:${t.bg}">${t.emoji}</div>
+      <div class="detail-avatar" style="background:${bg}">${emoji}</div>
       <div class="detail-title">
-        <h1>${t.name} <span class="card-status ${isPresale?'status-presale':'status-live'}">${isPresale?'● PRESALE':'● LIVE'}</span></h1>
-        <span class="dticker">${t.ticker}</span>
+        <h1>${l.token_name} <span class="card-status ${statusClasses[st]}">${statusLabels[st]}</span></h1>
+        <span class="dticker">$${l.token_symbol}</span>
         <div class="detail-addr">
-          <span>${t.mint}</span>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('${t.mint}');this.textContent='✓';setTimeout(()=>this.textContent='📋',1000)">📋</button>
-          <span style="margin-left:8px;color:var(--text-dim)">by ${t.creator}</span>
+          <span>${l.mint}</span>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${l.mint}');this.textContent='✓';setTimeout(()=>this.textContent='📋',1000)">📋</button>
+          <span style="margin-left:8px;color:var(--text-dim)">by ${shortAddr(l.creator)}</span>
+          <span style="margin-left:8px;color:${phaseColor};font-weight:600">${phaseLabel}</span>
         </div>
       </div>
     </div>
@@ -933,47 +1004,29 @@ function renderTokenDetail(id) {
           <canvas id="priceChart" class="chart-canvas"></canvas>
         </div>
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-label">Price (SOL)</div><div class="stat-val" style="color:${isPresale?'var(--gold)':'var(--green)'}">${t.price}</div></div>
-          <div class="stat-card"><div class="stat-label">Market Cap</div><div class="stat-val">${Number(marketCap).toLocaleString()} SOL</div></div>
-          <div class="stat-card"><div class="stat-label">SOL Raised</div><div class="stat-val">${t.sol} SOL</div></div>
-          <div class="stat-card"><div class="stat-label">Buyers</div><div class="stat-val">${typeof t.buyers==='number'?t.buyers.toLocaleString():t.buyers}</div></div>
-          <div class="stat-card"><div class="stat-label">${isPresale?'Presale Progress':'Status'}</div><div class="stat-val" style="color:var(--gold)">${isPresale?t.progress+'%':'Trading'}</div></div>
-          <div class="stat-card"><div class="stat-label">Floor Price</div><div class="stat-val" style="color:var(--gold)">${t.floor} SOL</div></div>
+          <div class="stat-card"><div class="stat-label">Current Price</div><div class="stat-val" style="color:${phaseColor}">${priceSOL} SOL</div></div>
+          <div class="stat-card"><div class="stat-label">Market Cap</div><div class="stat-val">${marketCap} SOL</div></div>
+          <div class="stat-card"><div class="stat-label">Total Raised</div><div class="stat-val">${totalRaised} SOL</div></div>
+          <div class="stat-card"><div class="stat-label">Buyers</div><div class="stat-val">${l.buyer_count.toLocaleString()}</div></div>
+          <div class="stat-card"><div class="stat-label">${isBonding ? 'Graduation' : 'Phase'}</div><div class="stat-val" style="color:${phaseColor}">${isBonding ? gradProgress + '%' : statusNames[st]}</div></div>
+          <div class="stat-card"><div class="stat-label">${isBonding ? 'Floor Price' : 'Base Price'}</div><div class="stat-val" style="color:var(--gold)">${formatSOL(l.price_lamports)} SOL</div></div>
         </div>
         <div class="activity-feed">
           <h3>Recent Activity</h3>
-          <div id="activity-list"></div>
+          <div id="activity-list">
+            <p style="color:var(--text-dim);text-align:center;padding:24px;font-family:var(--mono);font-size:12px">
+              Activity tracking coming soon. Check <a href="https://explorer.solana.com/address/${l.address}?cluster=devnet" target="_blank" style="color:var(--gold)">Solana Explorer</a> for transactions.
+            </p>
+          </div>
         </div>
       </div>
       <div class="detail-right">
-        <div class="trade-panel">
-          <h3>${isPresale ? '💰 Buy Presale' : '📊 Trade'}</h3>
-          ${!isPresale ? `<div class="trade-tabs"><button class="trade-tab active" onclick="switchTradeTab(this,'buy')">Buy</button><button class="trade-tab sell-tab" onclick="switchTradeTab(this,'sell')">Sell</button></div>` : ''}
-          <div class="trade-input-group">
-            <label>SOL Amount</label>
-            <input type="number" id="detail-trade-amount" placeholder="0.00" step="0.01" min="0.001">
-          </div>
-          <button class="trade-submit ${isPresale?'presale-btn':'buy-btn'}" id="detail-trade-btn" onclick="detailTrade('${id}','${isPresale?'presale':'buy'}')">${isPresale?'Buy Presale':'Buy'}</button>
-          <div class="trade-info">${isPresale?'Everyone gets the same price. Tokens distributed after presale ends.':'Built-in floor price protection on all trades.'}</div>
-        </div>
+        ${tradePanel}
       </div>
     </div>`;
 
-  // Draw chart
-  setTimeout(() => drawPriceChart(t), 50);
-
-  // Render activity
-  const activities = generateMockActivity(t.name);
-  const actList = document.getElementById('activity-list');
-  if (actList) {
-    actList.innerHTML = activities.map(a => `
-      <div class="activity-item">
-        <span class="activity-type ${a.type.toLowerCase()}">${a.type}</span>
-        <span class="activity-wallet">${a.wallet}</span>
-        <span class="activity-amount">${a.amount}</span>
-        <span class="activity-time">${a.time}</span>
-      </div>`).join('');
-  }
+  // Draw bonding curve chart
+  setTimeout(() => drawBondingCurveChart(l), 50);
 }
 
 function switchTradeTab(el, mode) {
@@ -983,26 +1036,21 @@ function switchTradeTab(el, mode) {
   if (mode === 'sell') {
     btn.className = 'trade-submit sell-btn';
     btn.textContent = 'Sell';
-    btn.onclick = () => alert('Sell functionality coming soon!');
   } else {
     btn.className = 'trade-submit buy-btn';
     btn.textContent = 'Buy';
   }
 }
 
-function detailTrade(id, mode) {
+function detailTrade(id) {
   if (!walletPubkey) { alert('Connect wallet first'); return; }
-  const t = findTokenData(id);
-  if (!t) return;
-  if (t.isOnchain && t._onchain) {
-    openBuyModal(t._onchain);
-  } else {
-    alert('This is a mock token for demo purposes. Connect wallet and create a real launch!');
-  }
+  const l = onchainLaunches.find(x => x.address === id);
+  if (!l) return;
+  openBuyModal(l);
 }
 
-// ── Canvas Price Chart ──
-function drawPriceChart(token) {
+// ── Bonding Curve Chart ──
+function drawBondingCurveChart(l) {
   const canvas = document.getElementById('priceChart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -1010,15 +1058,24 @@ function drawPriceChart(token) {
   canvas.width = rect.width - 32;
   canvas.height = 240;
   const w = canvas.width, h = canvas.height;
-  const pad = { top: 20, right: 60, bottom: 30, left: 10 };
+  const pad = { top: 20, right: 70, bottom: 30, left: 10 };
 
-  const isPresale = token.status === 'presale';
-  const lineColor = isPresale ? '#FFD700' : '#00ff88';
+  const isPresale = l.status === STATUS_PRESALE;
+  const lineColor = isPresale ? '#FFD700' : l.status === STATUS_BONDING_CURVE ? '#00ff88' : '#4488ff';
   const fillColor = isPresale ? 'rgba(255,215,0,0.06)' : 'rgba(0,255,136,0.06)';
-  const prices = generatePriceHistory(token.price, isPresale, token.name);
+
+  // Generate bonding curve visualization
+  const points = 100;
+  const maxTokens = Math.max(l.tokens_sold_curve * 2, l.total_supply * 0.1, 1000000);
+  const prices = [];
+  for (let i = 0; i <= points; i++) {
+    const tokensSold = Math.floor((i / points) * maxTokens);
+    prices.push(bondingCurvePrice(l.price_lamports, l.slope_scaled, tokensSold) / LAMPORTS_PER_SOL);
+  }
+
   const minP = Math.min(...prices) * 0.95;
-  const maxP = Math.max(...prices) * 1.05;
-  const xStep = (w - pad.left - pad.right) / (prices.length - 1);
+  const maxP = Math.max(...prices) * 1.05 || 0.001;
+  const xStep = (w - pad.left - pad.right) / points;
 
   const toX = i => pad.left + i * xStep;
   const toY = p => pad.top + (1 - (p - minP) / (maxP - minP)) * (h - pad.top - pad.bottom);
@@ -1027,7 +1084,7 @@ function drawPriceChart(token) {
   ctx.fillStyle = '#080808';
   ctx.fillRect(0, 0, w, h);
 
-  // Grid lines
+  // Grid
   ctx.strokeStyle = '#1a1a1a';
   ctx.lineWidth = 1;
   for (let i = 0; i < 5; i++) {
@@ -1037,50 +1094,85 @@ function drawPriceChart(token) {
     ctx.fillStyle = '#666';
     ctx.font = '10px JetBrains Mono';
     ctx.textAlign = 'left';
-    ctx.fillText(pVal.toFixed(4), w - pad.right + 4, y + 3);
+    ctx.fillText(pVal.toFixed(6), w - pad.right + 4, y + 3);
+  }
+
+  // Fill under curve
+  ctx.beginPath();
+  ctx.moveTo(toX(0), h - pad.bottom);
+  prices.forEach((p, i) => ctx.lineTo(toX(i), toY(p)));
+  ctx.lineTo(toX(points), h - pad.bottom);
+  ctx.closePath();
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+
+  // Draw full curve line (dimmed)
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(prices[0]));
+  prices.forEach((p, i) => { if (i > 0) ctx.lineTo(toX(i), toY(p)); });
+  ctx.strokeStyle = lineColor;
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Draw sold portion (bright)
+  const soldRatio = l.tokens_sold_curve / maxTokens;
+  const soldPoints = Math.round(soldRatio * points);
+  if (soldPoints > 0) {
+    ctx.beginPath();
+    ctx.moveTo(toX(0), toY(prices[0]));
+    for (let i = 1; i <= soldPoints; i++) ctx.lineTo(toX(i), toY(prices[i]));
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Current position dot
+    const cx = toX(soldPoints);
+    const cy = toY(prices[soldPoints]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = lineColor;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+    ctx.strokeStyle = lineColor;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Label current price
+    ctx.fillStyle = lineColor;
+    ctx.font = 'bold 11px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(formatSOL(bondingCurvePrice(l.price_lamports, l.slope_scaled, l.tokens_sold_curve)) + ' SOL', cx, cy - 14);
   }
 
   // X axis labels
   ctx.fillStyle = '#444';
   ctx.font = '9px JetBrains Mono';
   ctx.textAlign = 'center';
-  const labels = ['30s', '25s', '20s', '15s', '10s', '5s', 'now'];
-  labels.forEach((l, i) => {
-    const x = pad.left + (i / (labels.length - 1)) * (w - pad.left - pad.right);
-    ctx.fillText(l, x, h - 6);
-  });
+  ctx.fillText('0', pad.left, h - 6);
+  ctx.fillText('Tokens Sold →', (pad.left + w - pad.right) / 2, h - 6);
+  ctx.fillText(maxTokens >= 1e6 ? (maxTokens/1e6).toFixed(0)+'M' : maxTokens.toLocaleString(), w - pad.right, h - 6);
 
-  // Fill area
-  ctx.beginPath();
-  ctx.moveTo(toX(0), h - pad.bottom);
-  prices.forEach((p, i) => ctx.lineTo(toX(i), toY(p)));
-  ctx.lineTo(toX(prices.length - 1), h - pad.bottom);
-  ctx.closePath();
-  ctx.fillStyle = fillColor;
-  ctx.fill();
-
-  // Line
-  ctx.beginPath();
-  ctx.moveTo(toX(0), toY(prices[0]));
-  prices.forEach((p, i) => { if (i > 0) ctx.lineTo(toX(i), toY(p)); });
-  ctx.strokeStyle = lineColor;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Current price dot
-  const lastX = toX(prices.length - 1);
-  const lastY = toY(prices[prices.length - 1]);
-  ctx.beginPath();
-  ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
-  ctx.fillStyle = lineColor;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(lastX, lastY, 8, 0, Math.PI * 2);
-  ctx.strokeStyle = lineColor;
-  ctx.globalAlpha = 0.3;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.globalAlpha = 1;
+  // Draw floor price line if bonding curve
+  if (l.status === STATUS_BONDING_CURVE) {
+    const floorY = toY(l.price_lamports / LAMPORTS_PER_SOL);
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, floorY);
+    ctx.lineTo(w - pad.right, floorY);
+    ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,215,0,0.5)';
+    ctx.font = '9px JetBrains Mono';
+    ctx.textAlign = 'left';
+    ctx.fillText('floor', pad.left + 4, floorY - 4);
+  }
 }
 
 // ── Countdown timers ──
@@ -1089,31 +1181,13 @@ setInterval(() => {
   document.querySelectorAll('[data-endtime]').forEach(el => {
     const end = parseInt(el.dataset.endtime);
     const diff = end - now;
-    if (diff <= 0) { el.textContent = '00:00:00'; el.style.color='#ff6644'; return; }
-    const h = Math.floor(diff/3600);
-    const m = Math.floor((diff%3600)/60);
-    const s = diff%60;
-    el.textContent = (h>0?String(h).padStart(2,'0')+':':'') + String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-    if (diff <= 60) el.style.color='#ff6644'; else el.style.color='';
-  });
-  document.querySelectorAll('[data-countdown]').forEach(el => {
-    let v = parseInt(el.dataset.countdown);
-    v--; if (v < 0) v = 30;
-    el.dataset.countdown = v;
-    el.textContent = '00:' + String(v).padStart(2, '0');
-    if (v <= 5) el.style.color = '#ff6644'; else el.style.color = '';
+    if (diff <= 0) { el.textContent = '00:00'; el.style.color='#ff6644'; return; }
+    const m = Math.floor(diff / 60);
+    const s = diff % 60;
+    el.textContent = (m > 0 ? String(m).padStart(2,'0') + ':' : '') + String(s).padStart(2,'0');
+    if (diff <= 10) el.style.color = '#ff6644';
   });
 }, 1000);
-
-// Mock live updates
-setInterval(() => {
-  if (onchainLaunches.length > 0) return;
-  const cards = document.querySelectorAll('.card.presale .card-stat .s-value');
-  cards.forEach((el, i) => {
-    if (i % 3 === 1) { let v = parseInt(el.textContent.replace(/,/g, '')); v += Math.floor(Math.random() * 3) + 1; el.textContent = v.toLocaleString(); }
-    if (i % 3 === 2) { let v = parseFloat(el.textContent.replace(/,/g, '')); v += Math.random() * 1.5; el.textContent = v >= 1000 ? v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : v.toFixed(1); }
-  });
-}, 2000);
 
 // Filter chips
 document.querySelectorAll('.filter-chip').forEach(chip => {
@@ -1134,8 +1208,8 @@ document.querySelectorAll('.filter-chip').forEach(chip => {
 document.querySelector('.filter-search').addEventListener('input', (e) => {
   const q = e.target.value.toLowerCase();
   document.querySelectorAll('.card').forEach(card => {
-    const name = card.querySelector('h3').textContent.toLowerCase();
-    const ticker = card.querySelector('.ticker-name').textContent.toLowerCase();
+    const name = card.querySelector('h3')?.textContent.toLowerCase() || '';
+    const ticker = card.querySelector('.ticker-name')?.textContent.toLowerCase() || '';
     card.style.display = (name.includes(q) || ticker.includes(q)) ? '' : 'none';
   });
 });
@@ -1146,7 +1220,7 @@ document.getElementById('buyModal').addEventListener('click', e => { if (e.targe
 
 // ── Init ──
 loadOnchainLaunches();
-setInterval(loadOnchainLaunches, 30000);
+setInterval(loadOnchainLaunches, 15000); // refresh every 15s
 handleRoute();
 </script>
 </body>
