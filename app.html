@@ -153,6 +153,39 @@ body.sb-collapsed .main-content{margin-left:60px}
 .card-footer .mint-addr{font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.6}
 .floor-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,215,0,.06);color:var(--gold);border:1px solid rgba(255,215,0,.1)}
 
+/* ── CHAT ── */
+.chat-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:20px}
+.chat-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.chat-header h3{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--text-mid)}
+.chat-header .chat-count{font-family:var(--mono);font-size:11px;color:var(--text-dim)}
+.chat-messages{max-height:400px;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.chat-empty{text-align:center;padding:32px;color:var(--text-dim);font-family:var(--inter);font-size:13px}
+.chat-msg{display:flex;gap:10px;align-items:flex-start}
+.chat-pfp{width:32px;height:32px;border-radius:50%;background:var(--bg3);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:14px}
+.chat-pfp img{width:100%;height:100%;object-fit:cover}
+.chat-msg-body{flex:1;min-width:0}
+.chat-msg-header{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.chat-msg-user{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--gold)}
+.chat-msg-wallet{font-family:var(--mono);font-size:10px;color:var(--text-dim)}
+.chat-msg-time{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:auto}
+.chat-msg-text{font-family:var(--inter);font-size:13px;color:var(--text);line-height:1.5;word-break:break-word}
+.chat-input-area{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.chat-input{flex:1;font-family:var(--inter);font-size:13px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);outline:none;resize:none;min-height:40px;max-height:80px}
+.chat-input:focus{border-color:var(--gold)}
+.chat-input::placeholder{color:#444}
+.chat-send{font-family:var(--sans);font-size:13px;font-weight:600;padding:10px 18px;border-radius:10px;border:none;background:var(--gold);color:#000;cursor:pointer;transition:all .15s;flex-shrink:0}
+.chat-send:hover{box-shadow:0 0 16px rgba(255,215,0,.25)}
+.chat-send:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── PROFILE MODAL ── */
+.profile-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:250;display:none;align-items:center;justify-content:center}
+.profile-modal.open{display:flex}
+.profile-modal-inner{background:#0a0a0a;border:1px solid var(--border);border-radius:16px;padding:28px;width:90%;max-width:400px}
+.profile-modal-inner h2{font-family:var(--sans);font-size:20px;font-weight:700;color:var(--gold);margin-bottom:20px}
+.pfp-upload-area{width:80px;height:80px;border-radius:50%;background:var(--bg3);margin:0 auto 16px;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:32px;border:2px dashed var(--border);transition:border-color .15s}
+.pfp-upload-area:hover{border-color:var(--gold)}
+.pfp-upload-area img{width:100%;height:100%;object-fit:cover}
+
 /* ── CREATE PAGE ── */
 .create-page{max-width:960px;margin:0 auto;padding:32px 24px 80px}
 .create-page h1{font-family:var(--sans);font-size:28px;font-weight:700;margin-bottom:4px}
@@ -393,7 +426,7 @@ body.sb-collapsed .main-content{margin-left:60px}
     <a class="sidebar-link" href="#launches" data-nav="launches" data-tip="Home">
       <span class="link-icon">🏠</span><span class="link-label">Home</span>
     </a>
-    <a class="sidebar-link" href="#my-tokens" data-nav="my-tokens" data-tip="Profile">
+    <a class="sidebar-link" href="#my-tokens" data-nav="my-tokens" data-tip="Profile" onclick="if(walletPubkey)openProfileModal()">
       <span class="link-icon">👤</span><span class="link-label">Profile</span>
     </a>
     <a class="sidebar-link" href="#how-it-works" data-nav="how-it-works" data-tip="How It Works">
@@ -730,6 +763,28 @@ body.sb-collapsed .main-content{margin-left:60px}
 </div><!-- /main-content -->
 </div><!-- /app-layout -->
 
+<!-- PROFILE MODAL -->
+<div class="profile-modal" id="profileModal" onclick="if(event.target===this)closeProfileModal()">
+  <div class="profile-modal-inner">
+    <h2>👤 Set Up Profile</h2>
+    <div class="pfp-upload-area" id="pfpUploadArea" onclick="document.getElementById('pfpInput').click()">
+      <span id="pfpPreviewEmoji">👤</span>
+      <img id="pfpPreviewImg" style="display:none">
+      <input type="file" id="pfpInput" accept="image/*" style="display:none" onchange="handlePfpUpload(event)">
+    </div>
+    <div style="text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:16px">Click to upload profile picture</div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="profileUsername" placeholder="Enter username" maxlength="32">
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label>Bio <span style="color:var(--text-dim)">(optional)</span></label>
+      <input type="text" id="profileBio" placeholder="Short bio" maxlength="160">
+    </div>
+    <button class="create-submit" style="margin-top:20px" onclick="saveProfile()">Save Profile</button>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
 
@@ -742,9 +797,12 @@ const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgra
 const PROGRAM_ID = new PublicKey('H91AKWdUASAKjpGwq4NXzp8kyddLbZMj9N1rP8HFjCmw');
 const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 
+const API_URL = 'http://65.20.103.177:3001';
 let walletPubkey = null;
 let onchainLaunches = [];
 let selectedLaunch = null;
+let userProfile = null;
+let chatPollInterval = null;
 
 // ── Toast System ──
 const TOAST_ICONS = { error:'❌', success:'✅', warning:'⚠️', info:'ℹ️' };
@@ -833,6 +891,7 @@ async function connectWallet() {
     btn.setAttribute('data-tip', short);
     btn.style.color = 'var(--green)';
     toast('Wallet connected: ' + short, 'success');
+    loadProfile();
   } catch(e) {
     console.error(e);
     toast('Wallet connection failed: ' + (e.message || e), 'error');
@@ -1397,11 +1456,18 @@ function renderTokenDetail(id) {
             </p>
           </div>
         </div>
+        ${getChatHTML(l.address)}
       </div>
       <div class="detail-right">
         ${tradePanel}
       </div>
     </div>`;
+
+  // Load chat
+  setTimeout(() => loadChat(l.address), 100);
+  // Poll chat every 10s
+  if (chatPollInterval) clearInterval(chatPollInterval);
+  chatPollInterval = setInterval(() => loadChat(l.address), 10000);
 
   // Draw bonding curve chart
   setTimeout(() => drawBondingCurveChart(l), 50);
@@ -1601,9 +1667,179 @@ document.getElementById('topbarSearch')?.addEventListener('input', e => {
 // Close modals on overlay click
 document.getElementById('buyModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeBuyModal(); });
 
+// ══════════════════════════════════════════
+// PROFILE
+// ══════════════════════════════════════════
+
+async function loadProfile() {
+  if (!walletPubkey) return;
+  try {
+    const res = await fetch(`${API_URL}/api/profile/${walletPubkey.toBase58()}`);
+    userProfile = await res.json();
+    if (!userProfile.username) {
+      // First time — show profile setup
+      document.getElementById('profileModal').classList.add('open');
+    }
+  } catch(e) { console.warn('Profile load failed:', e); }
+}
+
+function closeProfileModal() {
+  document.getElementById('profileModal').classList.remove('open');
+}
+
+let pfpFile = null;
+function handlePfpUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  pfpFile = file;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    document.getElementById('pfpPreviewImg').src = ev.target.result;
+    document.getElementById('pfpPreviewImg').style.display = 'block';
+    document.getElementById('pfpPreviewEmoji').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProfile() {
+  if (!walletPubkey) { toast('Connect wallet first', 'warning'); return; }
+  const wallet = walletPubkey.toBase58();
+  const username = document.getElementById('profileUsername').value.trim();
+  const bio = document.getElementById('profileBio').value.trim();
+  if (!username) { toast('Enter a username', 'warning'); return; }
+
+  try {
+    // Save text data
+    await fetch(`${API_URL}/api/profile/${wallet}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, bio })
+    });
+
+    // Upload PFP if selected
+    if (pfpFile) {
+      const form = new FormData();
+      form.append('pfp', pfpFile);
+      await fetch(`${API_URL}/api/profile/${wallet}/pfp`, { method: 'POST', body: form });
+    }
+
+    toast('Profile saved!', 'success');
+    closeProfileModal();
+    await loadProfile();
+    // Update sidebar
+    const btn = document.getElementById('walletBtn');
+    btn.querySelector('.link-label').textContent = username;
+  } catch(e) {
+    toast('Failed to save profile: ' + e.message, 'error');
+  }
+}
+
+// Open profile modal from sidebar
+function openProfileModal() {
+  if (!walletPubkey) { toast('Connect wallet first', 'warning'); return; }
+  if (userProfile) {
+    document.getElementById('profileUsername').value = userProfile.username || '';
+    document.getElementById('profileBio').value = userProfile.bio || '';
+    if (userProfile.pfp_url) {
+      document.getElementById('pfpPreviewImg').src = API_URL + userProfile.pfp_url;
+      document.getElementById('pfpPreviewImg').style.display = 'block';
+      document.getElementById('pfpPreviewEmoji').style.display = 'none';
+    }
+  }
+  document.getElementById('profileModal').classList.add('open');
+}
+
+// ══════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════
+
+async function loadChat(tokenAddress) {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+  try {
+    const res = await fetch(`${API_URL}/api/chat/${tokenAddress}?limit=50`);
+    const messages = await res.json();
+    if (messages.length === 0) {
+      container.innerHTML = '<div class="chat-empty">💬 No messages yet. Be the first to comment!</div>';
+    } else {
+      container.innerHTML = messages.map(renderChatMsg).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+    const countEl = document.getElementById('chatCount');
+    if (countEl) countEl.textContent = messages.length + ' messages';
+  } catch(e) {
+    container.innerHTML = '<div class="chat-empty">Chat unavailable</div>';
+  }
+}
+
+function renderChatMsg(m) {
+  const name = m.username || shortAddr(m.wallet);
+  const pfp = m.pfp_url ? `<img src="${API_URL}${m.pfp_url}">` : '👤';
+  const time = timeAgo(m.created_at);
+  return `
+    <div class="chat-msg">
+      <div class="chat-pfp">${pfp}</div>
+      <div class="chat-msg-body">
+        <div class="chat-msg-header">
+          <span class="chat-msg-user">${name}</span>
+          <span class="chat-msg-wallet">${shortAddr(m.wallet)}</span>
+          <span class="chat-msg-time">${time}</span>
+        </div>
+        <div class="chat-msg-text">${escapeHtml(m.message)}</div>
+      </div>
+    </div>`;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function sendChatMessage(tokenAddress) {
+  if (!walletPubkey) { toast('Connect wallet first', 'warning'); return; }
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const sendBtn = document.getElementById('chatSendBtn');
+  sendBtn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_URL}/api/chat/${tokenAddress}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wallet: walletPubkey.toBase58(), message: msg })
+    });
+    if (!res.ok) throw new Error('Send failed');
+    input.value = '';
+    await loadChat(tokenAddress);
+  } catch(e) {
+    toast('Failed to send message', 'error');
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+function getChatHTML(tokenAddress) {
+  return `
+    <div class="chat-panel">
+      <div class="chat-header">
+        <h3>💬 Chat</h3>
+        <span class="chat-count" id="chatCount"></span>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-empty">Loading...</div>
+      </div>
+      <div class="chat-input-area">
+        <input class="chat-input" id="chatInput" placeholder="Write a message..." maxlength="500"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage('${tokenAddress}')}">
+        <button class="chat-send" id="chatSendBtn" onclick="sendChatMessage('${tokenAddress}')">Send</button>
+      </div>
+    </div>`;
+}
+
 // ── Init ──
 loadOnchainLaunches();
-setInterval(loadOnchainLaunches, 15000); // refresh every 15s
+setInterval(loadOnchainLaunches, 15000);
 handleRoute();
 </script>
 </body>
