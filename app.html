@@ -27,23 +27,45 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
 .app-layout{display:flex;min-height:100vh}
 
 /* SIDEBAR */
-.sidebar{width:200px;background:var(--bg);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;z-index:110;display:flex;flex-direction:column;overflow-y:auto}
-.sidebar-logo{padding:18px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
-.sidebar-logo .logo{font-family:var(--sans);font-size:18px;font-weight:700;color:var(--gold);letter-spacing:-0.5px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.sidebar{width:200px;background:var(--bg);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;z-index:110;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;transition:width .2s ease}
+.sidebar.collapsed{width:60px}
+.sidebar-logo{padding:18px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);min-height:56px}
+.sidebar-logo .logo{font-family:var(--sans);font-size:18px;font-weight:700;color:var(--gold);letter-spacing:-0.5px;cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.sidebar.collapsed .sidebar-logo{padding:18px 14px;justify-content:center}
+.sidebar.collapsed .logo .logo-text{display:none}
 .devnet-badge{font-family:var(--mono);font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(68,136,255,.15);color:var(--blue);border:1px solid rgba(68,136,255,.25);letter-spacing:1px;font-weight:600}
+.sidebar.collapsed .devnet-badge{display:none}
+
+.sidebar-toggle{position:absolute;top:18px;right:-12px;width:24px;height:24px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;z-index:1}
+.sidebar-toggle:hover{background:var(--gold);color:#000;border-color:var(--gold)}
+.sidebar.collapsed .sidebar-toggle{right:-12px}
 
 .sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
-.sidebar-link{font-family:var(--inter);font-size:14px;color:var(--text-dim);text-decoration:none;padding:10px 14px;border-radius:10px;transition:all .15s;cursor:pointer;display:flex;align-items:center;gap:10px;border:none;background:none;width:100%;text-align:left}
+.sidebar-link{font-family:var(--inter);font-size:14px;color:var(--text-dim);text-decoration:none;padding:10px 14px;border-radius:10px;transition:all .15s;cursor:pointer;display:flex;align-items:center;gap:10px;border:none;background:none;width:100%;text-align:left;position:relative;white-space:nowrap}
 .sidebar-link:hover{color:var(--text);background:var(--bg3)}
 .sidebar-link.active{color:var(--text);background:var(--bg3)}
 .sidebar-link .link-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
-.sidebar-create{margin:8px 10px;padding:12px 14px;border-radius:10px;border:none;font-family:var(--sans);font-size:14px;font-weight:600;background:var(--gold);color:#000;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;justify-content:center}
+.sidebar-link .link-label{transition:opacity .15s}
+.sidebar.collapsed .sidebar-link{justify-content:center;padding:10px}
+.sidebar.collapsed .sidebar-link .link-label{opacity:0;width:0;overflow:hidden}
+
+/* Tooltip on hover when collapsed */
+.sidebar.collapsed .sidebar-link::after{content:attr(data-tip);position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);font-family:var(--inter);font-size:12px;font-weight:500;color:var(--text);background:var(--bg3);border:1px solid var(--border);padding:6px 12px;border-radius:8px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200}
+.sidebar.collapsed .sidebar-link:hover::after{opacity:1}
+.sidebar.collapsed .sidebar-create::after{content:attr(data-tip);position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);font-family:var(--inter);font-size:12px;font-weight:500;color:#000;background:var(--gold);padding:6px 12px;border-radius:8px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200}
+.sidebar.collapsed .sidebar-create:hover::after{opacity:1}
+
+.sidebar-create{margin:8px 10px;padding:12px 14px;border-radius:10px;border:none;font-family:var(--sans);font-size:14px;font-weight:600;background:var(--gold);color:#000;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;justify-content:center;position:relative;white-space:nowrap;overflow:hidden}
 .sidebar-create:hover{box-shadow:0 0 20px rgba(255,215,0,.25)}
+.sidebar.collapsed .sidebar-create .create-label{display:none}
+.sidebar.collapsed .sidebar-create{padding:12px;margin:8px 6px}
 
 .sidebar-bottom{padding:12px 10px;border-top:1px solid var(--border)}
+.sidebar.collapsed .sidebar-bottom .sidebar-link{justify-content:center}
 
 /* MAIN CONTENT */
-.main-content{flex:1;margin-left:200px;min-width:0}
+.main-content{flex:1;margin-left:200px;min-width:0;transition:margin-left .2s ease}
+body.sb-collapsed .main-content{margin-left:60px}
 
 /* TOP BAR (simplified — no nav, just search + wallet) */
 .topbar{position:sticky;top:0;z-index:100;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
@@ -60,14 +82,13 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
 .nav{display:none}
 .create-btn{display:none}
 
-/* Mobile sidebar */
+/* Mobile: auto-collapse sidebar */
 @media(max-width:768px){
-  .sidebar{width:60px}
-  .sidebar-logo .logo span,.sidebar-link span:not(.link-icon),.sidebar-create span{display:none}
-  .sidebar-create{padding:12px}
+  .sidebar:not(.collapsed){width:60px}
+  .sidebar:not(.collapsed) .logo-text,.sidebar:not(.collapsed) .link-label,.sidebar:not(.collapsed) .create-label{display:none}
+  .sidebar:not(.collapsed) .sidebar-link{justify-content:center;padding:10px}
+  .sidebar:not(.collapsed) .sidebar-create{padding:12px;margin:8px 6px}
   .main-content{margin-left:60px}
-  .sidebar-link{justify-content:center;padding:10px}
-  .sidebar-link .link-icon{margin:0}
 }
 
 /* FILTERS */
@@ -360,30 +381,31 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
 
 <!-- SIDEBAR -->
 <div class="app-layout">
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <div class="logo" onclick="navigate('launches')">
       <span style="font-size:22px">⚖️</span>
-      <span>SAMES <span class="devnet-badge">DEV</span></span>
+      <span class="logo-text">SAMES <span class="devnet-badge">DEV</span></span>
     </div>
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">◀</button>
   </div>
   <nav class="sidebar-nav">
-    <a class="sidebar-link" href="#launches" data-nav="launches">
-      <span class="link-icon">🏠</span><span>Home</span>
+    <a class="sidebar-link" href="#launches" data-nav="launches" data-tip="Home">
+      <span class="link-icon">🏠</span><span class="link-label">Home</span>
     </a>
-    <a class="sidebar-link" href="#my-tokens" data-nav="my-tokens">
-      <span class="link-icon">👤</span><span>Profile</span>
+    <a class="sidebar-link" href="#my-tokens" data-nav="my-tokens" data-tip="Profile">
+      <span class="link-icon">👤</span><span class="link-label">Profile</span>
     </a>
-    <a class="sidebar-link" href="#how-it-works" data-nav="how-it-works">
-      <span class="link-icon">📖</span><span>How It Works</span>
+    <a class="sidebar-link" href="#how-it-works" data-nav="how-it-works" data-tip="How It Works">
+      <span class="link-icon">📖</span><span class="link-label">How It Works</span>
     </a>
   </nav>
-  <button class="sidebar-create" id="createBtn" onclick="navigate('create')">
-    <span>🚀</span><span>Create Token</span>
+  <button class="sidebar-create" id="createBtn" onclick="navigate('create')" data-tip="Create Token">
+    <span>🚀</span><span class="create-label">Create Token</span>
   </button>
   <div class="sidebar-bottom">
-    <button class="sidebar-link" id="walletBtn" style="width:100%">
-      <span class="link-icon">💳</span><span>Connect Wallet</span>
+    <button class="sidebar-link" id="walletBtn" style="width:100%" data-tip="Connect Wallet">
+      <span class="link-icon">💳</span><span class="link-label">Connect Wallet</span>
     </button>
   </div>
 </aside>
@@ -807,7 +829,8 @@ async function connectWallet() {
     const short = walletPubkey.toBase58().slice(0,4) + '...' + walletPubkey.toBase58().slice(-4);
     // Update sidebar wallet button
     const btn = document.getElementById('walletBtn');
-    btn.querySelector('span:last-child').textContent = short;
+    btn.querySelector('.link-label').textContent = short;
+    btn.setAttribute('data-tip', short);
     btn.style.color = 'var(--green)';
     toast('Wallet connected: ' + short, 'success');
   } catch(e) {
@@ -850,6 +873,22 @@ function timeAgo(timestamp) {
   if (diff < 3600) return Math.floor(diff/60) + 'm ago';
   if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
   return Math.floor(diff/86400) + 'd ago';
+}
+
+// ── Sidebar Toggle ──
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const btn = document.getElementById('sidebarToggle');
+  const collapsed = sb.classList.toggle('collapsed');
+  document.body.classList.toggle('sb-collapsed', collapsed);
+  btn.textContent = collapsed ? '▶' : '◀';
+  localStorage.setItem('sidebar-collapsed', collapsed);
+}
+// Restore sidebar state
+if (localStorage.getItem('sidebar-collapsed') === 'true') {
+  document.getElementById('sidebar').classList.add('collapsed');
+  document.body.classList.add('sb-collapsed');
+  document.getElementById('sidebarToggle').textContent = '▶';
 }
 
 // ── Create Launch ── (sidebar button already has onclick="navigate('create')")
