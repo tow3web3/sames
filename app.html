@@ -290,52 +290,87 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
   <div class="hiw-page">
     <div class="hiw-hero">
       <h1>⚖️ How SAMES Works</h1>
-      <p>The fairest token launch on Solana. No bots, no snipers, no front-running. Everyone gets the <strong style="color:var(--gold)">same price</strong>.</p>
+      <p>The fairest token launch on Solana. Three phases take your token from <strong style="color:var(--gold)">fair presale</strong> → <strong style="color:var(--green)">protected trading</strong> → <strong style="color:var(--blue)">full DEX liquidity</strong>.</p>
+    </div>
+
+    <div class="hiw-phases" style="display:flex;gap:8px;justify-content:center;margin:32px 0 40px;flex-wrap:wrap">
+      <div style="flex:1;min-width:160px;text-align:center;padding:16px 12px;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.15);border-radius:12px">
+        <div style="font-size:28px;margin-bottom:6px">⏱️</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:1px">PHASE 1</div>
+        <div style="font-family:var(--sans);font-size:14px;font-weight:600;margin-top:4px">Fair Presale</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:4px">30 seconds</div>
+      </div>
+      <div style="display:flex;align-items:center;color:var(--text-dim);font-size:20px">→</div>
+      <div style="flex:1;min-width:160px;text-align:center;padding:16px 12px;background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.15);border-radius:12px">
+        <div style="font-size:28px;margin-bottom:6px">🛡️</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:1px">PHASE 2</div>
+        <div style="font-family:var(--sans);font-size:14px;font-weight:600;margin-top:4px">Protected Trading</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:4px">Bonding curve</div>
+      </div>
+      <div style="display:flex;align-items:center;color:var(--text-dim);font-size:20px">→</div>
+      <div style="flex:1;min-width:160px;text-align:center;padding:16px 12px;background:rgba(68,136,255,.05);border:1px solid rgba(68,136,255,.15);border-radius:12px">
+        <div style="font-size:28px;margin-bottom:6px">🌊</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--blue);letter-spacing:1px">PHASE 3</div>
+        <div style="font-family:var(--sans);font-size:14px;font-weight:600;margin-top:4px">Graduation</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:4px">Raydium LP</div>
+      </div>
     </div>
 
     <div class="hiw-step">
-      <div class="hiw-step-num">01</div>
-      <h2><span class="step-emoji">🚀</span> Create a Launch</h2>
+      <div class="hiw-step-num" style="color:var(--gold)">01</div>
+      <h2><span class="step-emoji">⏱️</span> Phase 1 — Fair Presale <span style="font-size:14px;color:var(--gold);font-weight:400">(30 seconds)</span></h2>
       <ul>
-        <li>Creator sets token name, symbol, supply, and initial price</li>
-        <li>A <strong style="color:var(--gold)">30-second</strong> presale window opens immediately</li>
-        <li>All token addresses end in <code style="color:var(--gold)">"...same"</code> — vanity addresses</li>
-        <li>One transaction, instant setup</li>
-      </ul>
-    </div>
-
-    <div class="hiw-step">
-      <div class="hiw-step-num">02</div>
-      <h2><span class="step-emoji">⏱️</span> Fair Presale Window</h2>
-      <ul>
-        <li><strong style="color:var(--gold)">30-second countdown</strong> begins</li>
+        <li>Creator sets token name, symbol, supply — launch goes live instantly</li>
+        <li>A <strong style="color:var(--gold)">30-second presale window</strong> opens</li>
         <li>Anyone can deposit SOL during this window</li>
-        <li>No advantage to being first — <strong style="color:var(--green)">EVERYONE gets the same price</strong></li>
-        <li>No bots, no snipers, no front-running</li>
-        <li>The playing field is 100% level</li>
+        <li><strong style="color:var(--green)">Everyone gets the SAME price</strong> — no advantage to being first</li>
+        <li>No bots, no snipers, no front-running. The playing field is 100% level</li>
+        <li>When the window closes, tokens are distributed <strong>proportionally</strong>:<br>
+          <code style="color:var(--gold);font-size:12px;margin-top:4px;display:inline-block">your tokens = (your SOL ÷ total SOL raised) × total supply</code></li>
+        <li>More SOL raised = higher starting market cap</li>
+        <li>All token addresses end in <code style="color:var(--gold)">"...same"</code> — vanity addresses, instantly recognizable</li>
       </ul>
     </div>
 
     <div class="hiw-step">
-      <div class="hiw-step-num">03</div>
-      <h2><span class="step-emoji">📦</span> Token Distribution</h2>
+      <div class="hiw-step-num" style="color:var(--green)">02</div>
+      <h2><span class="step-emoji">🛡️</span> Phase 2 — Protected Trading <span style="font-size:14px;color:var(--green);font-weight:400">(Bonding Curve)</span></h2>
       <ul>
-        <li>When the 30s window closes, tokens are distributed <strong>proportionally</strong></li>
-        <li>Your share = <code style="color:var(--gold)">(your SOL / total SOL raised) × total supply</code></li>
-        <li>More SOL raised = higher market cap at launch</li>
-        <li>Fair, transparent, mathematical</li>
+        <li>After presale, the token enters a <strong style="color:var(--green)">bonding curve market</strong> on SAMES</li>
+        <li>Price moves up and down based on buys/sells, like pump.fun</li>
+        <li>BUT with one critical difference: <strong style="color:var(--gold)">you cannot sell below your entry price</strong></li>
+        <li>This is enforced <strong>on-chain</strong> via Token-2022 transfer hooks — no trust required</li>
+        <li>The smart contract tracks every buyer's entry price and blocks sells below it</li>
       </ul>
+      <div style="margin:20px 0;padding:20px;background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.1);border-radius:10px">
+        <div style="font-family:var(--sans);font-size:15px;font-weight:600;color:var(--gold);margin-bottom:10px">🔒 Why Price Floor Matters</div>
+        <div style="font-family:var(--inter);font-size:13px;color:var(--text-mid);line-height:1.7">
+          On pump.fun, devs and early snipers regularly dump on later buyers, crashing the token to zero. On SAMES, <strong style="color:var(--text)">nobody can sell at a loss</strong> during the bonding curve phase. This means:
+          <ul style="margin-top:8px;padding-left:20px">
+            <li style="margin:4px 0"><strong style="color:var(--green)">No rug pulls</strong> — dumpers can't crash below their buy-in</li>
+            <li style="margin:4px 0"><strong style="color:var(--green)">Organic growth</strong> — only profitable sells go through</li>
+            <li style="margin:4px 0"><strong style="color:var(--green)">Confidence</strong> — buyers know the floor holds</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <div class="hiw-step">
-      <div class="hiw-step-num">04</div>
-      <h2><span class="step-emoji">📈</span> Trading Opens</h2>
+      <div class="hiw-step-num" style="color:var(--blue)">03</div>
+      <h2><span class="step-emoji">🌊</span> Phase 3 — Graduation to Raydium <span style="font-size:14px;color:var(--blue);font-weight:400">(Full DEX)</span></h2>
       <ul>
-        <li>After distribution, token goes <strong style="color:var(--green)">live for trading</strong></li>
-        <li>Built-in <strong style="color:var(--gold)">price floor protection</strong>: sellers can't dump below entry price</li>
-        <li>Transfer hooks on Token-2022 enforce this on-chain</li>
-        <li>Your investment has a safety net</li>
+        <li>When the bonding curve hits the <strong style="color:var(--gold)">graduation threshold</strong> (market cap target), the token graduates</li>
+        <li>Liquidity is <strong>automatically migrated</strong> to a Raydium LP pool</li>
+        <li>Price floor is removed — the token becomes a <strong>normal, freely tradeable token</strong></li>
+        <li>No more restrictions, no more training wheels — full degen mode 🚀</li>
+        <li>The token now lives on Raydium like any other Solana token</li>
       </ul>
+      <div style="margin:20px 0;padding:20px;background:rgba(68,136,255,.04);border:1px solid rgba(68,136,255,.1);border-radius:10px">
+        <div style="font-family:var(--sans);font-size:15px;font-weight:600;color:var(--blue);margin-bottom:10px">💡 Why Graduate?</div>
+        <div style="font-family:var(--inter);font-size:13px;color:var(--text-mid);line-height:1.7">
+          The bonding curve phase is <strong style="color:var(--text)">training wheels</strong>. It protects the token while it's young and vulnerable. Once it has enough liquidity and community support, it graduates to a real DEX where it can reach its full potential. Think of it as a launchpad → orbit transfer.
+        </div>
+      </div>
     </div>
 
     <div class="hiw-why">
@@ -344,22 +379,22 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
         <div class="hiw-reason">
           <div class="reason-icon">🤝</div>
           <h3>Fair</h3>
-          <p>Everyone gets the same price. Period.</p>
+          <p>Everyone gets the same price. Period. No snipers, no bots.</p>
         </div>
         <div class="hiw-reason">
           <div class="reason-icon">🛡️</div>
-          <h3>Anti-Sniper</h3>
-          <p>30s window eliminates bot advantage completely.</p>
+          <h3>Protected</h3>
+          <p>Can't sell below entry during bonding curve. No dumps, no rugs.</p>
         </div>
         <div class="hiw-reason">
-          <div class="reason-icon">📊</div>
-          <h3>Price Floor</h3>
-          <p>Can't sell below entry — protects all holders.</p>
+          <div class="reason-icon">📈</div>
+          <h3>Growth Path</h3>
+          <p>Presale → Bonding Curve → Raydium. Clear graduation path.</p>
         </div>
         <div class="hiw-reason">
           <div class="reason-icon">⛓️</div>
           <h3>On-Chain</h3>
-          <p>Everything enforced by Solana smart contract.</p>
+          <p>Transfer hooks enforce everything. No trust needed.</p>
         </div>
         <div class="hiw-reason">
           <div class="reason-icon">⚡</div>
@@ -376,12 +411,13 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
           <tr><th>Feature</th><th>pump.fun</th><th>SAMES</th></tr>
         </thead>
         <tbody>
-          <tr><td>First buyer advantage</td><td class="bad">✅ Big</td><td class="good">❌ None</td></tr>
-          <tr><td>Bot sniping</td><td class="bad">✅ Common</td><td class="good">❌ Impossible</td></tr>
-          <tr><td>Price protection</td><td class="bad">❌ None</td><td class="good">✅ Floor price</td></tr>
-          <tr><td>Fair pricing</td><td class="bad">❌ Bonding curve</td><td class="good">✅ Same for all</td></tr>
-          <tr><td>Launch speed</td><td>~1 min</td><td class="good">30 seconds</td></tr>
-          <tr><td>On-chain enforcement</td><td class="bad">❌ No</td><td class="good">✅ Transfer hooks</td></tr>
+          <tr><td>Launch pricing</td><td class="bad">Bonding curve (first = cheapest)</td><td class="good">Same price for all (30s window)</td></tr>
+          <tr><td>Bot/sniper advantage</td><td class="bad">✅ Huge</td><td class="good">❌ None</td></tr>
+          <tr><td>Sell below entry</td><td class="bad">✅ Allowed (dumps)</td><td class="good">❌ Blocked on-chain</td></tr>
+          <tr><td>Rug pull protection</td><td class="bad">❌ None</td><td class="good">✅ Price floor enforced</td></tr>
+          <tr><td>DEX graduation</td><td>Raydium</td><td class="good">Raydium (same)</td></tr>
+          <tr><td>On-chain enforcement</td><td class="bad">❌ No</td><td class="good">✅ Token-2022 hooks</td></tr>
+          <tr><td>Vanity addresses</td><td>...pump</td><td class="good">...same</td></tr>
         </tbody>
       </table>
     </div>
