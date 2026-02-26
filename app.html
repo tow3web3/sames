@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMES — Fair Launch Pad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#FFD700;--gold-dim:#C8A800;--gold-glow:rgba(255,215,0,.12);
+  --bg:#000;--bg2:#080808;--bg3:#111;--card:#0a0a0a;--card-hover:#0f0f0f;
+  --border:#1a1a1a;--border-hover:#2a2a2a;
+  --text:#e8e8e8;--text-dim:#666;--text-mid:#999;--white:#fff;
+  --green:#00ff88;--green-dim:#00cc6a;--red:#ff4444;--blue:#4488ff;
+  --mono:'JetBrains Mono',monospace;--sans:'Space Grotesk',sans-serif;--inter:'Inter',sans-serif;
+}
+html{background:var(--bg)}
+body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:hidden;min-height:100vh}
+::selection{background:var(--gold);color:#000}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#0a0a0a}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+
+/* TOP BAR */
+.topbar{position:sticky;top:0;z-index:100;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.topbar-left{display:flex;align-items:center;gap:24px}
+.logo{font-family:var(--sans);font-size:20px;font-weight:700;color:var(--gold);letter-spacing:-0.5px;cursor:pointer}
+.devnet-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(68,136,255,.15);color:var(--blue);border:1px solid rgba(68,136,255,.25);letter-spacing:1px;font-weight:600}
+.nav{display:flex;gap:4px}
+.nav a{font-family:var(--inter);font-size:13px;color:var(--text-dim);text-decoration:none;padding:6px 14px;border-radius:8px;transition:all .15s;cursor:pointer}
+.nav a:hover,.nav a.active{color:var(--text);background:var(--bg3)}
+.nav a.active{color:var(--gold)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.wallet-btn{font-family:var(--mono);font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--gold);color:var(--gold);background:transparent;cursor:pointer;transition:all .15s}
+.wallet-btn:hover{background:rgba(255,215,0,.08)}
+.wallet-btn.connected{border-color:var(--green);color:var(--green)}
+.create-btn{font-family:var(--sans);font-size:13px;font-weight:600;padding:8px 18px;border-radius:8px;border:none;background:var(--gold);color:#000;cursor:pointer;transition:all .15s}
+.create-btn:hover{box-shadow:0 0 20px rgba(255,215,0,.25)}
+
+/* FILTERS */
+.filters{padding:16px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);overflow-x:auto}
+.filter-chip{font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:6px;border:1px solid var(--border);color:var(--text-dim);background:transparent;cursor:pointer;white-space:nowrap;transition:all .15s;letter-spacing:.5px}
+.filter-chip:hover{border-color:var(--border-hover);color:var(--text)}
+.filter-chip.active{border-color:var(--gold);color:var(--gold);background:rgba(255,215,0,.05)}
+.filter-search{font-family:var(--mono);font-size:12px;padding:6px 14px;border-radius:6px;border:1px solid var(--border);color:var(--text);background:var(--bg2);outline:none;width:200px;margin-left:auto}
+.filter-search::placeholder{color:var(--text-dim)}
+.filter-search:focus{border-color:var(--gold)}
+
+/* LIVE STATS TICKER */
+.ticker{padding:10px 24px;display:flex;gap:24px;border-bottom:1px solid var(--border);overflow-x:auto}
+.ticker-item{font-family:var(--mono);font-size:11px;color:var(--text-dim);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.ticker-val{color:var(--text);font-weight:600}
+.ticker-green{color:var(--green)}
+.ticker-gold{color:var(--gold)}
+
+/* TOKEN GRID */
+.grid-container{padding:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+
+/* TOKEN CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .25s;position:relative}
+.card:hover{border-color:var(--border-hover);transform:translateY(-3px) scale(1.01);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.card.presale{border-color:rgba(255,215,0,.15)}
+.card.presale:hover{border-color:rgba(255,215,0,.3);box-shadow:0 12px 40px rgba(255,215,0,.08)}
+.card.live{border-color:rgba(0,255,136,.1)}
+.card.live:hover{border-color:rgba(0,255,136,.25);box-shadow:0 12px 40px rgba(0,255,136,.06)}
+
+.card-header{padding:14px 16px 10px;display:flex;align-items:center;gap:12px}
+.token-avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.card-info{flex:1;min-width:0}
+.card-info h3{font-family:var(--sans);font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-info .ticker-name{font-family:var(--mono);font-size:11px;color:var(--text-dim)}
+.card-status{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:5px;letter-spacing:.5px;font-weight:600;flex-shrink:0}
+.status-presale{background:rgba(255,215,0,.1);color:var(--gold);border:1px solid rgba(255,215,0,.15)}
+.status-live{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.15)}
+.status-ended{background:rgba(102,102,102,.1);color:var(--text-dim);border:1px solid rgba(102,102,102,.15)}
+
+.card-countdown{padding:6px 16px 12px;text-align:center}
+.countdown-timer{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,.2);letter-spacing:2px}
+.countdown-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.card.live .countdown-timer{color:var(--green);text-shadow:0 0 20px rgba(0,255,136,.2)}
+
+.card-progress{padding:0 16px;margin-bottom:10px}
+.progress-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.presale .progress-fill{background:linear-gradient(90deg,var(--gold-dim),var(--gold))}
+.live .progress-fill{background:linear-gradient(90deg,var(--green-dim),var(--green))}
+
+.card-stats{padding:8px 16px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.card-stat{text-align:center}
+.card-stat .s-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase}
+.card-stat .s-value{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);margin-top:1px}
+.s-green{color:var(--green)!important}
+.s-gold{color:var(--gold)!important}
+
+.card-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-footer .creator{font-family:var(--mono);font-size:10px;color:var(--text-dim)}
+.card-footer .time-ago{font-family:var(--mono);font-size:10px;color:var(--text-dim)}
+.card-footer .mint-addr{font-family:var(--mono);font-size:9px;color:var(--text-dim);opacity:.6}
+.floor-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,215,0,.06);color:var(--gold);border:1px solid rgba(255,215,0,.1)}
+
+/* SECTION VISIBILITY */
+.page-section{display:none}
+.page-section.active{display:block}
+
+/* ── TOKEN DETAIL PAGE ── */
+.detail-page{max-width:1200px;margin:0 auto;padding:20px 24px}
+.detail-back{font-family:var(--mono);font-size:13px;color:var(--text-dim);cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;transition:all .15s;margin-bottom:20px}
+.detail-back:hover{color:var(--text);border-color:var(--border-hover);background:var(--bg3)}
+.detail-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.detail-avatar{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:32px}
+.detail-title h1{font-family:var(--sans);font-size:28px;font-weight:700;display:flex;align-items:center;gap:10px}
+.detail-title .dticker{font-family:var(--mono);font-size:14px;color:var(--text-dim)}
+.detail-addr{font-family:var(--mono);font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:6px;margin-top:4px}
+.detail-addr .copy-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px}
+.detail-addr .copy-btn:hover{color:var(--gold)}
+
+.detail-body{display:grid;grid-template-columns:1fr 340px;gap:24px}
+.detail-left{min-width:0}
+.detail-right{}
+
+/* Chart */
+.chart-container{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:20px}
+.chart-container h3{font-family:var(--sans);font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-mid)}
+.chart-canvas{width:100%;height:240px;border-radius:8px}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.stat-card .stat-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase}
+.stat-card .stat-val{font-family:var(--mono);font-size:18px;font-weight:700;margin-top:4px}
+
+/* Activity feed */
+.activity-feed{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+.activity-feed h3{font-family:var(--sans);font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-mid)}
+.activity-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.activity-item:last-child{border-bottom:none}
+.activity-type{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:5px;font-weight:600}
+.activity-type.buy{background:rgba(0,255,136,.1);color:var(--green)}
+.activity-type.sell{background:rgba(255,68,68,.1);color:var(--red)}
+.activity-wallet{font-family:var(--mono);font-size:11px;color:var(--text-dim);flex:1}
+.activity-amount{font-family:var(--mono);font-size:12px;font-weight:600}
+.activity-time{font-family:var(--mono);font-size:10px;color:var(--text-dim)}
+
+/* Buy/Sell panel */
+.trade-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;position:sticky;top:76px}
+.trade-panel h3{font-family:var(--sans);font-size:16px;font-weight:600;margin-bottom:16px}
+.trade-tabs{display:flex;gap:4px;margin-bottom:16px}
+.trade-tab{flex:1;font-family:var(--mono);font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;text-align:center;transition:all .15s}
+.trade-tab.active{border-color:var(--gold);color:var(--gold);background:rgba(255,215,0,.05)}
+.trade-tab.sell-tab.active{border-color:var(--red);color:var(--red);background:rgba(255,68,68,.05)}
+.trade-input-group{margin-bottom:14px}
+.trade-input-group label{font-family:var(--mono);font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px}
+.trade-input-group input{width:100%;font-family:var(--mono);font-size:14px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);outline:none}
+.trade-input-group input:focus{border-color:var(--gold)}
+.trade-submit{width:100%;font-family:var(--sans);font-size:14px;font-weight:600;padding:12px;border-radius:8px;border:none;cursor:pointer;transition:all .15s}
+.trade-submit.buy-btn{background:var(--green);color:#000}
+.trade-submit.buy-btn:hover{box-shadow:0 0 20px rgba(0,255,136,.25)}
+.trade-submit.sell-btn{background:var(--red);color:#fff}
+.trade-submit.presale-btn{background:var(--gold);color:#000}
+.trade-submit.presale-btn:hover{box-shadow:0 0 20px rgba(255,215,0,.25)}
+.trade-info{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:12px;text-align:center}
+
+/* ── HOW IT WORKS ── */
+.hiw-page{max-width:900px;margin:0 auto;padding:40px 24px 80px}
+.hiw-hero{text-align:center;margin-bottom:60px}
+.hiw-hero h1{font-family:var(--sans);font-size:42px;font-weight:700;background:linear-gradient(135deg,var(--gold),#fff,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}
+.hiw-hero p{font-family:var(--inter);font-size:16px;color:var(--text-mid);max-width:600px;margin:0 auto;line-height:1.6}
+
+.hiw-step{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:32px;margin-bottom:24px;position:relative;overflow:hidden}
+.hiw-step::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:linear-gradient(180deg,var(--gold),transparent)}
+.hiw-step-num{font-family:var(--mono);font-size:48px;font-weight:700;color:rgba(255,215,0,.1);position:absolute;top:12px;right:24px}
+.hiw-step h2{font-family:var(--sans);font-size:22px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.hiw-step h2 .step-emoji{font-size:28px}
+.hiw-step ul{list-style:none;padding:0}
+.hiw-step ul li{font-family:var(--inter);font-size:14px;color:var(--text-mid);padding:6px 0;padding-left:20px;position:relative;line-height:1.6}
+.hiw-step ul li::before{content:'›';position:absolute;left:0;color:var(--gold);font-weight:700}
+
+.hiw-why{background:linear-gradient(135deg,rgba(255,215,0,.04),rgba(0,255,136,.02));border:1px solid rgba(255,215,0,.15);border-radius:18px;padding:32px;margin:40px 0}
+.hiw-why h2{font-family:var(--sans);font-size:24px;font-weight:700;color:var(--gold);margin-bottom:20px;text-align:center}
+.hiw-reasons{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.hiw-reason{text-align:center;padding:16px}
+.hiw-reason .reason-icon{font-size:28px;margin-bottom:8px}
+.hiw-reason h3{font-family:var(--sans);font-size:15px;font-weight:600;margin-bottom:4px}
+.hiw-reason p{font-family:var(--inter);font-size:13px;color:var(--text-dim);line-height:1.5}
+
+.hiw-compare{margin-top:40px}
+.hiw-compare h2{font-family:var(--sans);font-size:22px;font-weight:700;text-align:center;margin-bottom:20px}
+.compare-table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--border)}
+.compare-table th{font-family:var(--mono);font-size:12px;padding:14px 18px;text-align:left;background:var(--bg3);color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase}
+.compare-table th:last-child{color:var(--gold)}
+.compare-table td{font-family:var(--inter);font-size:13px;padding:12px 18px;border-top:1px solid var(--border);color:var(--text-mid)}
+.compare-table td:first-child{font-weight:600;color:var(--text)}
+.compare-table .good{color:var(--green)}
+.compare-table .bad{color:var(--red)}
+
+/* ── MY TOKENS (coming soon) ── */
+.coming-soon{text-align:center;padding:80px 24px}
+.coming-soon h2{font-family:var(--sans);font-size:28px;font-weight:700;color:var(--text-dim);margin-bottom:12px}
+.coming-soon p{font-family:var(--inter);font-size:14px;color:var(--text-dim)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#0a0a0a;border:1px solid var(--border);border-radius:16px;padding:28px;width:90%;max-width:420px;position:relative}
+.modal h2{font-family:var(--sans);font-size:20px;font-weight:700;color:var(--gold);margin-bottom:20px}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer}
+.modal-close:hover{color:var(--text)}
+.modal label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.5px;display:block;margin-bottom:4px;margin-top:14px}
+.modal input{width:100%;font-family:var(--mono);font-size:13px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);outline:none}
+.modal input:focus{border-color:var(--gold)}
+.modal-submit{width:100%;margin-top:20px;font-family:var(--sans);font-size:14px;font-weight:600;padding:12px;border-radius:8px;border:none;background:var(--gold);color:#000;cursor:pointer;transition:all .15s}
+.modal-submit:hover{box-shadow:0 0 20px rgba(255,215,0,.25)}
+.modal-submit:disabled{opacity:.5;cursor:not-allowed}
+.modal-info{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:12px;text-align:center}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .detail-body{grid-template-columns:1fr}
+  .detail-right{position:static}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  .grid{grid-template-columns:1fr}
+  .topbar{padding:0 16px}
+  .grid-container{padding:12px}
+  .filters{padding:12px 16px}
+  .nav{display:none}
+  .hiw-hero h1{font-size:28px}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .detail-header h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo" onclick="navigate('launches')">SAMES <span class="devnet-badge">DEVNET</span></div>
+    <nav class="nav">
+      <a href="#launches" data-nav="launches" class="active">Launches</a>
+      <a href="#my-tokens" data-nav="my-tokens">My Tokens</a>
+      <a href="#how-it-works" data-nav="how-it-works">How It Works</a>
+    </nav>
+  </div>
+  <div class="topbar-right">
+    <button class="create-btn" id="createBtn">+ Launch Token</button>
+    <button class="wallet-btn" id="walletBtn">Connect Wallet</button>
+  </div>
+</div>
+
+<!-- ═══ LAUNCHES PAGE ═══ -->
+<div id="page-launches" class="page-section active">
+  <!-- LIVE TICKER -->
+  <div class="ticker">
+    <div class="ticker-item">🟡 Active Presales: <span class="ticker-val ticker-gold" id="t-presales">0</span></div>
+    <div class="ticker-item">🟢 Live Trading: <span class="ticker-val ticker-green" id="t-live">0</span></div>
+    <div class="ticker-item">💰 Total Volume: <span class="ticker-val" id="t-vol">0 SOL</span></div>
+    <div class="ticker-item">👥 Unique Buyers: <span class="ticker-val" id="t-buyers">0</span></div>
+    <div class="ticker-item">🔒 Zero sellers at loss</div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters">
+    <button class="filter-chip active">🔥 All</button>
+    <button class="filter-chip">🟡 Presale</button>
+    <button class="filter-chip">🟢 Live</button>
+    <button class="filter-chip">📈 Top Gainers</button>
+    <button class="filter-chip">🆕 Newest</button>
+    <button class="filter-chip">💰 Most Raised</button>
+    <input type="text" class="filter-search" placeholder="Search token...">
+  </div>
+
+  <!-- TOKEN GRID -->
+  <div class="grid-container">
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<!-- ═══ TOKEN DETAIL PAGE ═══ -->
+<div id="page-token" class="page-section">
+  <div class="detail-page" id="detail-content"></div>
+</div>
+
+<!-- ═══ HOW IT WORKS PAGE ═══ -->
+<div id="page-how-it-works" class="page-section">
+  <div class="hiw-page">
+    <div class="hiw-hero">
+      <h1>⚖️ How SAMES Works</h1>
+      <p>The fairest token launch on Solana. No bots, no snipers, no front-running. Everyone gets the <strong style="color:var(--gold)">same price</strong>.</p>
+    </div>
+
+    <div class="hiw-step">
+      <div class="hiw-step-num">01</div>
+      <h2><span class="step-emoji">🚀</span> Create a Launch</h2>
+      <ul>
+        <li>Creator sets token name, symbol, supply, and initial price</li>
+        <li>A <strong style="color:var(--gold)">30-second</strong> presale window opens immediately</li>
+        <li>All token addresses end in <code style="color:var(--gold)">"...same"</code> — vanity addresses</li>
+        <li>One transaction, instant setup</li>
+      </ul>
+    </div>
+
+    <div class="hiw-step">
+      <div class="hiw-step-num">02</div>
+      <h2><span class="step-emoji">⏱️</span> Fair Presale Window</h2>
+      <ul>
+        <li><strong style="color:var(--gold)">30-second countdown</strong> begins</li>
+        <li>Anyone can deposit SOL during this window</li>
+        <li>No advantage to being first — <strong style="color:var(--green)">EVERYONE gets the same price</strong></li>
+        <li>No bots, no snipers, no front-running</li>
+        <li>The playing field is 100% level</li>
+      </ul>
+    </div>
+
+    <div class="hiw-step">
+      <div class="hiw-step-num">03</div>
+      <h2><span class="step-emoji">📦</span> Token Distribution</h2>
+      <ul>
+        <li>When the 30s window closes, tokens are distributed <strong>proportionally</strong></li>
+        <li>Your share = <code style="color:var(--gold)">(your SOL / total SOL raised) × total supply</code></li>
+        <li>More SOL raised = higher market cap at launch</li>
+        <li>Fair, transparent, mathematical</li>
+      </ul>
+    </div>
+
+    <div class="hiw-step">
+      <div class="hiw-step-num">04</div>
+      <h2><span class="step-emoji">📈</span> Trading Opens</h2>
+      <ul>
+        <li>After distribution, token goes <strong style="color:var(--green)">live for trading</strong></li>
+        <li>Built-in <strong style="color:var(--gold)">price floor protection</strong>: sellers can't dump below entry price</li>
+        <li>Transfer hooks on Token-2022 enforce this on-chain</li>
+        <li>Your investment has a safety net</li>
+      </ul>
+    </div>
+
+    <div class="hiw-why">
+      <h2>⚖️ Why SAMES?</h2>
+      <div class="hiw-reasons">
+        <div class="hiw-reason">
+          <div class="reason-icon">🤝</div>
+          <h3>Fair</h3>
+          <p>Everyone gets the same price. Period.</p>
+        </div>
+        <div class="hiw-reason">
+          <div class="reason-icon">🛡️</div>
+          <h3>Anti-Sniper</h3>
+          <p>30s window eliminates bot advantage completely.</p>
+        </div>
+        <div class="hiw-reason">
+          <div class="reason-icon">📊</div>
+          <h3>Price Floor</h3>
+          <p>Can't sell below entry — protects all holders.</p>
+        </div>
+        <div class="hiw-reason">
+          <div class="reason-icon">⛓️</div>
+          <h3>On-Chain</h3>
+          <p>Everything enforced by Solana smart contract.</p>
+        </div>
+        <div class="hiw-reason">
+          <div class="reason-icon">⚡</div>
+          <h3>Fast</h3>
+          <p>30 seconds from creation to tradeable token.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="hiw-compare">
+      <h2>SAMES vs pump.fun</h2>
+      <table class="compare-table">
+        <thead>
+          <tr><th>Feature</th><th>pump.fun</th><th>SAMES</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>First buyer advantage</td><td class="bad">✅ Big</td><td class="good">❌ None</td></tr>
+          <tr><td>Bot sniping</td><td class="bad">✅ Common</td><td class="good">❌ Impossible</td></tr>
+          <tr><td>Price protection</td><td class="bad">❌ None</td><td class="good">✅ Floor price</td></tr>
+          <tr><td>Fair pricing</td><td class="bad">❌ Bonding curve</td><td class="good">✅ Same for all</td></tr>
+          <tr><td>Launch speed</td><td>~1 min</td><td class="good">30 seconds</td></tr>
+          <tr><td>On-chain enforcement</td><td class="bad">❌ No</td><td class="good">✅ Transfer hooks</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MY TOKENS PAGE ═══ -->
+<div id="page-my-tokens" class="page-section">
+  <div class="coming-soon">
+    <h2>🔒 My Tokens</h2>
+    <p>Portfolio tracking coming soon. Connect your wallet to see your SAMES positions.</p>
+  </div>
+</div>
+
+<!-- LAUNCH MODAL -->
+<div class="modal-overlay" id="launchModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeLaunchModal()">&times;</button>
+    <h2>🚀 Launch Token</h2>
+    <label>Token Name</label>
+    <input type="text" id="lm-name" placeholder="e.g. Samurai Cat" maxlength="32">
+    <label>Symbol</label>
+    <input type="text" id="lm-symbol" placeholder="e.g. SCAT" maxlength="10">
+    <label>Total Supply</label>
+    <input type="number" id="lm-supply" placeholder="e.g. 1000000000" min="1">
+    <label>Price per Token (lamports)</label>
+    <input type="number" id="lm-price" placeholder="e.g. 1000000 (= 0.001 SOL)" min="1">
+    <button class="modal-submit" id="lm-submit" onclick="submitLaunch()">Create Launch</button>
+    <div class="modal-info">Mint address will be derived automatically. You need SOL for fees.</div>
+  </div>
+</div>
+
+<!-- BUY MODAL -->
+<div class="modal-overlay" id="buyModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeBuyModal()">&times;</button>
+    <h2>💰 Buy Presale</h2>
+    <div id="buy-token-info" style="font-family:var(--mono);font-size:12px;color:var(--text-mid);margin-bottom:10px"></div>
+    <label>SOL Amount</label>
+    <input type="number" id="bm-amount" placeholder="e.g. 1.5" step="0.01" min="0.001">
+    <button class="modal-submit" id="bm-submit" onclick="submitBuy()">Buy</button>
+    <div class="modal-info">Funds go to the presale vault. Tokens distributed after launch.</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+<script>
+// ── Solana Setup ──
+const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram, LAMPORTS_PER_SOL } = solanaWeb3;
+const PROGRAM_ID = new PublicKey('H91AKWdUASAKjpGwq4NXzp8kyddLbZMj9N1rP8HFjCmw');
+const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+
+let walletPubkey = null;
+let onchainLaunches = [];
+let selectedLaunch = null;
+
+// ── Navigation / Routing ──
+function navigate(page, param) {
+  if (page === 'launches') window.location.hash = '#launches';
+  else if (page === 'how-it-works') window.location.hash = '#how-it-works';
+  else if (page === 'my-tokens') window.location.hash = '#my-tokens';
+  else if (page === 'token') window.location.hash = '#token/' + param;
+}
+
+function handleRoute() {
+  const hash = window.location.hash || '#launches';
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+
+  if (hash.startsWith('#token/')) {
+    document.getElementById('page-token').classList.add('active');
+    const id = hash.slice(7);
+    renderTokenDetail(id);
+  } else if (hash === '#how-it-works') {
+    document.getElementById('page-how-it-works').classList.add('active');
+    document.querySelector('[data-nav="how-it-works"]')?.classList.add('active');
+  } else if (hash === '#my-tokens') {
+    document.getElementById('page-my-tokens').classList.add('active');
+    document.querySelector('[data-nav="my-tokens"]')?.classList.add('active');
+  } else {
+    document.getElementById('page-launches').classList.add('active');
+    document.querySelector('[data-nav="launches"]')?.classList.add('active');
+  }
+}
+
+window.addEventListener('hashchange', handleRoute);
+
+// ── Wallet ──
+const walletBtn = document.getElementById('walletBtn');
+walletBtn.addEventListener('click', connectWallet);
+
+async function getProvider() {
+  if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+  if (window.solana?.isPhantom) return window.solana;
+  if (window.solflare?.isSolflare) return window.solflare;
+  return null;
+}
+
+async function connectWallet() {
+  if (walletPubkey) { walletPubkey = null; walletBtn.textContent = 'Connect Wallet'; walletBtn.classList.remove('connected'); return; }
+  const provider = await getProvider();
+  if (!provider) { alert('No Solana wallet found. Install Phantom or Solflare.'); return; }
+  try {
+    const resp = await provider.connect();
+    walletPubkey = resp.publicKey;
+    const addr = walletPubkey.toBase58();
+    walletBtn.textContent = addr.slice(0,3) + '...' + addr.slice(-3);
+    walletBtn.classList.add('connected');
+  } catch(e) { console.error('Wallet connect failed:', e); }
+}
+
+// ── PDA helpers ──
+function findPDA(seeds) {
+  return PublicKey.findProgramAddressSync(seeds, PROGRAM_ID);
+}
+
+async function getDiscriminator(name) {
+  const data = new TextEncoder().encode('global:' + name);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return new Uint8Array(hash).slice(0, 8);
+}
+
+function encodeString(s) {
+  const bytes = new TextEncoder().encode(s);
+  const buf = new ArrayBuffer(4 + bytes.length);
+  const view = new DataView(buf);
+  view.setUint32(0, bytes.length, true);
+  new Uint8Array(buf, 4).set(bytes);
+  return new Uint8Array(buf);
+}
+
+function encodeU64(n) {
+  const buf = new ArrayBuffer(8);
+  new DataView(buf).setBigUint64(0, BigInt(n), true);
+  return new Uint8Array(buf);
+}
+
+// ── Create Launch ──
+document.getElementById('createBtn').addEventListener('click', () => {
+  if (!walletPubkey) { alert('Connect wallet first'); return; }
+  document.getElementById('launchModal').classList.add('open');
+});
+function closeLaunchModal() { document.getElementById('launchModal').classList.remove('open'); }
+
+async function submitLaunch() {
+  const name = document.getElementById('lm-name').value.trim();
+  const symbol = document.getElementById('lm-symbol').value.trim();
+  const supply = document.getElementById('lm-supply').value;
+  const price = document.getElementById('lm-price').value;
+  if (!name || !symbol || !supply || !price) { alert('Fill all fields'); return; }
+  const btn = document.getElementById('lm-submit');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  try {
+    const provider = await getProvider();
+    const mintKp = solanaWeb3.Keypair.generate();
+    const mint = mintKp.publicKey;
+    const [launchPool, bump] = findPDA([Buffer.from('launch_pool'), mint.toBytes()]);
+    const [vault] = findPDA([Buffer.from('vault'), launchPool.toBytes()]);
+    const [marketRegistry] = findPDA([Buffer.from('market_registry'), launchPool.toBytes()]);
+
+    const disc = await getDiscriminator('create_launch');
+    const data = new Uint8Array([
+      ...disc, ...encodeString(name), ...encodeString(symbol),
+      ...encodeU64(supply), ...encodeU64(price),
+    ]);
+
+    const ix = new TransactionInstruction({
+      keys: [
+        { pubkey: walletPubkey, isSigner: true, isWritable: true },
+        { pubkey: mint, isSigner: false, isWritable: false },
+        { pubkey: launchPool, isSigner: false, isWritable: true },
+        { pubkey: vault, isSigner: false, isWritable: true },
+        { pubkey: marketRegistry, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      programId: PROGRAM_ID,
+      data: Buffer.from(data),
+    });
+
+    const tx = new Transaction().add(ix);
+    tx.feePayer = walletPubkey;
+    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+    const signed = await provider.signTransaction(tx);
+    const sig = await connection.sendRawTransaction(signed.serialize());
+    await connection.confirmTransaction(sig, 'confirmed');
+    alert('Launch created! TX: ' + sig);
+    closeLaunchModal();
+    loadOnchainLaunches();
+  } catch(e) {
+    console.error(e);
+    alert('Error: ' + (e.message || e));
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Launch';
+  }
+}
+
+// ── Buy Presale ──
+function openBuyModal(launch) {
+  if (!walletPubkey) { alert('Connect wallet first'); return; }
+  selectedLaunch = launch;
+  document.getElementById('buy-token-info').textContent = `${launch.token_name} (${launch.token_symbol}) — ${(launch.price_lamports / LAMPORTS_PER_SOL).toFixed(6)} SOL/token`;
+  document.getElementById('bm-amount').value = '';
+  document.getElementById('buyModal').classList.add('open');
+}
+function closeBuyModal() { document.getElementById('buyModal').classList.remove('open'); selectedLaunch = null; }
+
+async function submitBuy() {
+  if (!selectedLaunch) return;
+  const solAmount = parseFloat(document.getElementById('bm-amount').value);
+  if (!solAmount || solAmount <= 0) { alert('Enter SOL amount'); return; }
+  const btn = document.getElementById('bm-submit');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  try {
+    const provider = await getProvider();
+    const lamports = Math.round(solAmount * LAMPORTS_PER_SOL);
+    const launchPool = new PublicKey(selectedLaunch.address);
+    const [vault] = findPDA([Buffer.from('vault'), launchPool.toBytes()]);
+    const [buyerRecord] = findPDA([Buffer.from('buyer_record'), launchPool.toBytes(), walletPubkey.toBytes()]);
+
+    const disc = await getDiscriminator('buy_presale');
+    const data = new Uint8Array([...disc, ...encodeU64(lamports)]);
+
+    const ix = new TransactionInstruction({
+      keys: [
+        { pubkey: walletPubkey, isSigner: true, isWritable: true },
+        { pubkey: launchPool, isSigner: false, isWritable: true },
+        { pubkey: vault, isSigner: false, isWritable: true },
+        { pubkey: buyerRecord, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      programId: PROGRAM_ID,
+      data: Buffer.from(data),
+    });
+
+    const tx = new Transaction().add(ix);
+    tx.feePayer = walletPubkey;
+    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+    const signed = await provider.signTransaction(tx);
+    const sig = await connection.sendRawTransaction(signed.serialize());
+    await connection.confirmTransaction(sig, 'confirmed');
+    alert('Purchase successful! TX: ' + sig);
+    closeBuyModal();
+    loadOnchainLaunches();
+  } catch(e) {
+    console.error(e);
+    alert('Error: ' + (e.message || e));
+  } finally {
+    btn.disabled = false; btn.textContent = 'Buy';
+  }
+}
+
+// ── Deserialize LaunchPool ──
+function deserializeLaunchPool(data, pubkey) {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  let offset = 8;
+  const creator = new PublicKey(data.slice(offset, offset+32)); offset += 32;
+  const mint = new PublicKey(data.slice(offset, offset+32)); offset += 32;
+  const nameLen = view.getUint32(offset, true); offset += 4;
+  const token_name = new TextDecoder().decode(data.slice(offset, offset+nameLen)); offset += nameLen;
+  const symLen = view.getUint32(offset, true); offset += 4;
+  const token_symbol = new TextDecoder().decode(data.slice(offset, offset+symLen)); offset += symLen;
+  const total_supply = view.getBigUint64(offset, true); offset += 8;
+  const price_lamports = view.getBigUint64(offset, true); offset += 8;
+  const start_time = view.getBigInt64(offset, true); offset += 8;
+  const end_time = view.getBigInt64(offset, true); offset += 8;
+  const total_sol_collected = view.getBigUint64(offset, true); offset += 8;
+  const buyer_count = view.getUint32(offset, true); offset += 4;
+  const status = data[offset]; offset += 1;
+
+  return {
+    address: pubkey.toBase58(),
+    creator: creator.toBase58(),
+    mint: mint.toBase58(),
+    token_name, token_symbol,
+    total_supply: Number(total_supply),
+    price_lamports: Number(price_lamports),
+    start_time: Number(start_time),
+    end_time: Number(end_time),
+    total_sol_collected: Number(total_sol_collected),
+    buyer_count, status
+  };
+}
+
+// ── Fetch launches from chain ──
+async function loadOnchainLaunches() {
+  try {
+    const accounts = await connection.getProgramAccounts(PROGRAM_ID);
+    const accountDisc = await (async () => {
+      const d = new TextEncoder().encode('account:LaunchPool');
+      const h = await crypto.subtle.digest('SHA-256', d);
+      return new Uint8Array(h).slice(0,8);
+    })();
+
+    const launches = [];
+    for (const { pubkey, account } of accounts) {
+      const data = account.data;
+      if (data.length < 100) continue;
+      const match = accountDisc.every((b, i) => data[i] === b);
+      if (!match) continue;
+      try {
+        launches.push(deserializeLaunchPool(data, pubkey));
+      } catch(e) { console.warn('Failed to deserialize', pubkey.toBase58(), e); }
+    }
+    onchainLaunches = launches;
+    renderAll();
+  } catch(e) {
+    console.error('Failed to load launches:', e);
+    renderAll();
+  }
+}
+
+// ── Mock data ──
+const MOCK_TOKENS = [
+  {name:"Samurai Cat",ticker:"$SCAT",emoji:"🐱",status:"presale",countdown:27,price:"0.001",buyers:847,sol:"312.4",progress:78,gain:null,floor:"0.001",creator:"7xK...f2d",time:"12s ago",bg:"#2a1800",mockId:"mock-0",mint:"7xKa...same"},
+  {name:"Moon Frog",ticker:"$MFROG",emoji:"🐸",status:"presale",countdown:14,price:"0.0005",buyers:1243,sol:"521.8",progress:92,gain:null,floor:"0.0005",creator:"4aB...9e1",time:"18s ago",bg:"#002a00",mockId:"mock-1",mint:"4aBz...same"},
+  {name:"Based Chad",ticker:"$CHAD",emoji:"💪",status:"presale",countdown:8,price:"0.002",buyers:423,sol:"184.2",progress:45,gain:null,floor:"0.002",creator:"9cD...3b7",time:"22s ago",bg:"#1a0028",mockId:"mock-2",mint:"9cDx...same"},
+  {name:"Void Entity",ticker:"$VOID",emoji:"🌑",status:"live",countdown:0,price:"0.0087",buyers:2891,sol:"1,247",progress:100,gain:"+312%",floor:"0.001",creator:"2fE...8a4",time:"4m ago",bg:"#000a1a",mockId:"mock-3",mint:"2fEq...same"},
+  {name:"Sol Penguin",ticker:"$SPEN",emoji:"🐧",status:"live",countdown:0,price:"0.0034",buyers:1567,sol:"687.3",progress:100,gain:"+89%",floor:"0.0015",creator:"6gH...2c9",time:"8m ago",bg:"#001a2a",mockId:"mock-4",mint:"6gHk...same"},
+  {name:"Degen Ape",ticker:"$DAPE",emoji:"🦍",status:"live",countdown:0,price:"0.0156",buyers:4201,sol:"3,842",progress:100,gain:"+680%",floor:"0.002",creator:"1jK...5d2",time:"15m ago",bg:"#1a1000",mockId:"mock-5",mint:"1jKp...same"},
+  {name:"Fair Launch",ticker:"$FAIR",emoji:"⚖️",status:"presale",countdown:22,price:"0.001",buyers:612,sol:"198.7",progress:55,gain:null,floor:"0.001",creator:"3mL...7f8",time:"8s ago",bg:"#0a0a1a",mockId:"mock-6",mint:"3mLw...same"},
+  {name:"Diamond Paws",ticker:"$DPAW",emoji:"💎",status:"live",countdown:0,price:"0.0043",buyers:988,sol:"412.6",progress:100,gain:"+115%",floor:"0.002",creator:"8nM...4g1",time:"22m ago",bg:"#001a1a",mockId:"mock-7",mint:"8nMv...same"},
+  {name:"Gigabrain AI",ticker:"$GIGA",emoji:"🧠",status:"live",countdown:0,price:"0.0298",buyers:6723,sol:"8,421",progress:100,gain:"+1,390%",floor:"0.002",creator:"5pN...9h3",time:"1h ago",bg:"#180018",mockId:"mock-8",mint:"5pNa...same"},
+  {name:"Ninja Shiba",ticker:"$NSHI",emoji:"🥷",status:"presale",countdown:19,price:"0.0008",buyers:334,sol:"89.2",progress:30,gain:null,floor:"0.0008",creator:"7qP...2j6",time:"11s ago",bg:"#1a0000",mockId:"mock-9",mint:"7qPz...same"},
+  {name:"Cosmic Whale",ticker:"$CWHL",emoji:"🐋",status:"live",countdown:0,price:"0.0062",buyers:1823,sol:"1,102",progress:100,gain:"+210%",floor:"0.002",creator:"4rQ...8k4",time:"32m ago",bg:"#000820",mockId:"mock-10",mint:"4rQj...same"},
+  {name:"Turbo Hamster",ticker:"$THAM",emoji:"🐹",status:"live",countdown:0,price:"0.0019",buyers:756,sol:"287.4",progress:100,gain:"+52%",floor:"0.00125",creator:"9sR...1m7",time:"45m ago",bg:"#0a1800",mockId:"mock-11",mint:"9sRc...same"},
+];
+
+// ── Generate mock price history ──
+function generatePriceHistory(basePrice, isPresale, seed) {
+  const points = 50;
+  const prices = [];
+  let price = parseFloat(basePrice);
+  let rng = Math.abs(hashCode(seed || 'x'));
+  for (let i = 0; i < points; i++) {
+    rng = (rng * 16807 + 12345) & 0x7fffffff;
+    const change = ((rng % 1000) / 1000 - 0.45) * price * 0.08;
+    price = Math.max(price * 0.5, price + change);
+    prices.push(price);
+  }
+  return prices;
+}
+
+// ── Generate mock activity ──
+function generateMockActivity(tokenName) {
+  const wallets = ['7xK...f2d','4aB...9e1','9cD...3b7','2fE...8a4','6gH...2c9','1jK...5d2','3mL...7f8','8nM...4g1'];
+  const activities = [];
+  let rng = Math.abs(hashCode(tokenName));
+  for (let i = 0; i < 8; i++) {
+    rng = (rng * 16807 + 12345) & 0x7fffffff;
+    const isBuy = rng % 3 !== 0;
+    const sol = ((rng % 10000) / 1000 + 0.1).toFixed(2);
+    const mins = i * 2 + (rng % 5);
+    activities.push({
+      type: isBuy ? 'BUY' : 'SELL',
+      wallet: wallets[rng % wallets.length],
+      amount: sol + ' SOL',
+      time: mins < 60 ? mins + 'm ago' : Math.floor(mins/60) + 'h ago'
+    });
+  }
+  return activities;
+}
+
+// ── Render ──
+const statusNames = ['presale','live','closed'];
+const emojis = ['🪙','🔶','💠','🟡','🔵','🟣','🔴','🟢','⭐','💎','🌀','🎯'];
+
+function onchainToCard(l) {
+  const st = statusNames[l.status] || 'presale';
+  const isPresale = st === 'presale';
+  const now = Math.floor(Date.now()/1000);
+  const remaining = l.end_time - now;
+  const total = l.end_time - l.start_time;
+  const progress = total > 0 ? Math.min(100, Math.max(0, Math.round(((total - Math.max(0,remaining)) / total)*100))) : 100;
+  const solCollected = (l.total_sol_collected / LAMPORTS_PER_SOL).toFixed(1);
+  const priceSOL = (l.price_lamports / LAMPORTS_PER_SOL).toFixed(6);
+  const creatorShort = l.creator.slice(0,3)+'...'+l.creator.slice(-3);
+  const emoji = emojis[Math.abs(hashCode(l.token_name)) % emojis.length];
+  return {
+    name: l.token_name, ticker: '$'+l.token_symbol, emoji, status: st,
+    endTime: l.end_time, price: priceSOL, buyers: l.buyer_count,
+    sol: solCollected, progress, gain: isPresale ? null : '+?%',
+    floor: priceSOL, creator: creatorShort, time: '', bg: '#1a1000',
+    _onchain: l, navId: l.address, mint: l.mint.slice(0,4)+'...'+l.mint.slice(-4)
+  };
+}
+
+function hashCode(s) { let h=0; for(let i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i)|0; return h; }
+
+function renderCard(t, isMock) {
+  const isPresale = t.status === 'presale';
+  const navId = t.navId || t.mockId || '';
+  return `
+    <div class="card ${t.status}" onclick="navigate('token','${navId}')">
+      <div class="card-header">
+        <div class="token-avatar" style="background:${t.bg}">${t.emoji}</div>
+        <div class="card-info">
+          <h3>${t.name}</h3>
+          <span class="ticker-name">${t.ticker}</span>
+        </div>
+        <span class="card-status ${isPresale?'status-presale': t.status==='closed'?'status-ended':'status-live'}">${isPresale?'● PRESALE': t.status==='closed'?'● CLOSED':'● LIVE'}</span>
+      </div>
+      ${isPresale && t.endTime ? `
+      <div class="card-countdown">
+        <div class="countdown-timer" data-endtime="${t.endTime}">--:--:--</div>
+        <div class="countdown-label">until market opens</div>
+      </div>` : isPresale ? `
+      <div class="card-countdown">
+        <div class="countdown-timer" data-countdown="${t.countdown||0}">00:${String(t.countdown||0).padStart(2,'0')}</div>
+        <div class="countdown-label">until market opens</div>
+      </div>` : `
+      <div class="card-countdown">
+        <div class="countdown-timer">${t.gain||'LIVE'}</div>
+        <div class="countdown-label">since launch</div>
+      </div>`}
+      <div class="card-progress">
+        <div class="progress-bar"><div class="progress-fill" style="width:${t.progress}%"></div></div>
+      </div>
+      <div class="card-stats">
+        <div class="card-stat"><div class="s-label">Price</div><div class="s-value">${t.price}</div></div>
+        <div class="card-stat"><div class="s-label">Buyers</div><div class="s-value">${typeof t.buyers==='number'?t.buyers.toLocaleString():t.buyers}</div></div>
+        <div class="card-stat"><div class="s-label">SOL</div><div class="s-value">${t.sol}</div></div>
+      </div>
+      <div class="card-footer">
+        <span class="creator">${t.creator}</span>
+        <span class="floor-badge">🔒 Floor: ${t.floor}</span>
+        ${t.mint ? `<span class="mint-addr">${t.mint}</span>` : `<span class="time-ago">${t.time}</span>`}
+      </div>
+    </div>`;
+}
+
+function renderAll() {
+  const grid = document.getElementById('grid');
+  const onchainCards = onchainLaunches.map(l => onchainToCard(l));
+  let html = onchainCards.map(c => renderCard(c, false)).join('');
+  if (onchainCards.length === 0) {
+    html = MOCK_TOKENS.map(t => renderCard(t, true)).join('');
+  }
+  grid.innerHTML = html;
+
+  const presaleCount = onchainCards.length > 0 ? onchainCards.filter(c=>c.status==='presale').length : 7;
+  const liveCount = onchainCards.length > 0 ? onchainCards.filter(c=>c.status==='live').length : 43;
+  const totalSol = onchainCards.length > 0 ? onchainLaunches.reduce((s,l)=>s+l.total_sol_collected,0)/LAMPORTS_PER_SOL : 12847;
+  const totalBuyers = onchainCards.length > 0 ? onchainLaunches.reduce((s,l)=>s+l.buyer_count,0) : 8291;
+  document.getElementById('t-presales').textContent = presaleCount;
+  document.getElementById('t-live').textContent = liveCount;
+  document.getElementById('t-vol').textContent = totalSol.toLocaleString(undefined,{maximumFractionDigits:1}) + ' SOL';
+  document.getElementById('t-buyers').textContent = totalBuyers.toLocaleString();
+}
+
+// ── Token Detail Page ──
+function findTokenData(id) {
+  // Check on-chain first
+  const onchain = onchainLaunches.find(l => l.address === id);
+  if (onchain) {
+    const st = statusNames[onchain.status] || 'presale';
+    const priceSOL = (onchain.price_lamports / LAMPORTS_PER_SOL).toFixed(6);
+    const emoji = emojis[Math.abs(hashCode(onchain.token_name)) % emojis.length];
+    return {
+      name: onchain.token_name, ticker: '$'+onchain.token_symbol, emoji,
+      status: st, price: priceSOL, buyers: onchain.buyer_count,
+      sol: (onchain.total_sol_collected / LAMPORTS_PER_SOL).toFixed(1),
+      progress: 100, floor: priceSOL, creator: onchain.creator,
+      mint: onchain.mint, bg: '#1a1000', supply: onchain.total_supply,
+      _onchain: onchain, isOnchain: true
+    };
+  }
+  // Check mock
+  const mock = MOCK_TOKENS.find(t => t.mockId === id);
+  if (mock) {
+    return {
+      name: mock.name, ticker: mock.ticker, emoji: mock.emoji,
+      status: mock.status, price: mock.price, buyers: mock.buyers,
+      sol: mock.sol, progress: mock.progress, floor: mock.floor,
+      creator: mock.creator, mint: mock.mint || 'xxxx...same',
+      bg: mock.bg, supply: 1000000000, isOnchain: false
+    };
+  }
+  return null;
+}
+
+function renderTokenDetail(id) {
+  const t = findTokenData(id);
+  const container = document.getElementById('detail-content');
+  if (!t) {
+    container.innerHTML = '<button class="detail-back" onclick="navigate(\'launches\')">← Back</button><p style="color:var(--text-dim);text-align:center;padding:60px">Token not found</p>';
+    return;
+  }
+  const isPresale = t.status === 'presale';
+  const priceNum = parseFloat(t.price);
+  const marketCap = (priceNum * t.supply).toFixed(2);
+  const solNum = parseFloat(String(t.sol).replace(/,/g,''));
+
+  container.innerHTML = `
+    <button class="detail-back" onclick="navigate('launches')">← Back to Launches</button>
+    <div class="detail-header">
+      <div class="detail-avatar" style="background:${t.bg}">${t.emoji}</div>
+      <div class="detail-title">
+        <h1>${t.name} <span class="card-status ${isPresale?'status-presale':'status-live'}">${isPresale?'● PRESALE':'● LIVE'}</span></h1>
+        <span class="dticker">${t.ticker}</span>
+        <div class="detail-addr">
+          <span>${t.mint}</span>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${t.mint}');this.textContent='✓';setTimeout(()=>this.textContent='📋',1000)">📋</button>
+          <span style="margin-left:8px;color:var(--text-dim)">by ${t.creator}</span>
+        </div>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-left">
+        <div class="chart-container">
+          <h3>Price Chart</h3>
+          <canvas id="priceChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">Price (SOL)</div><div class="stat-val" style="color:${isPresale?'var(--gold)':'var(--green)'}">${t.price}</div></div>
+          <div class="stat-card"><div class="stat-label">Market Cap</div><div class="stat-val">${Number(marketCap).toLocaleString()} SOL</div></div>
+          <div class="stat-card"><div class="stat-label">SOL Raised</div><div class="stat-val">${t.sol} SOL</div></div>
+          <div class="stat-card"><div class="stat-label">Buyers</div><div class="stat-val">${typeof t.buyers==='number'?t.buyers.toLocaleString():t.buyers}</div></div>
+          <div class="stat-card"><div class="stat-label">${isPresale?'Presale Progress':'Status'}</div><div class="stat-val" style="color:var(--gold)">${isPresale?t.progress+'%':'Trading'}</div></div>
+          <div class="stat-card"><div class="stat-label">Floor Price</div><div class="stat-val" style="color:var(--gold)">${t.floor} SOL</div></div>
+        </div>
+        <div class="activity-feed">
+          <h3>Recent Activity</h3>
+          <div id="activity-list"></div>
+        </div>
+      </div>
+      <div class="detail-right">
+        <div class="trade-panel">
+          <h3>${isPresale ? '💰 Buy Presale' : '📊 Trade'}</h3>
+          ${!isPresale ? `<div class="trade-tabs"><button class="trade-tab active" onclick="switchTradeTab(this,'buy')">Buy</button><button class="trade-tab sell-tab" onclick="switchTradeTab(this,'sell')">Sell</button></div>` : ''}
+          <div class="trade-input-group">
+            <label>SOL Amount</label>
+            <input type="number" id="detail-trade-amount" placeholder="0.00" step="0.01" min="0.001">
+          </div>
+          <button class="trade-submit ${isPresale?'presale-btn':'buy-btn'}" id="detail-trade-btn" onclick="detailTrade('${id}','${isPresale?'presale':'buy'}')">${isPresale?'Buy Presale':'Buy'}</button>
+          <div class="trade-info">${isPresale?'Everyone gets the same price. Tokens distributed after presale ends.':'Built-in floor price protection on all trades.'}</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Draw chart
+  setTimeout(() => drawPriceChart(t), 50);
+
+  // Render activity
+  const activities = generateMockActivity(t.name);
+  const actList = document.getElementById('activity-list');
+  if (actList) {
+    actList.innerHTML = activities.map(a => `
+      <div class="activity-item">
+        <span class="activity-type ${a.type.toLowerCase()}">${a.type}</span>
+        <span class="activity-wallet">${a.wallet}</span>
+        <span class="activity-amount">${a.amount}</span>
+        <span class="activity-time">${a.time}</span>
+      </div>`).join('');
+  }
+}
+
+function switchTradeTab(el, mode) {
+  el.parentElement.querySelectorAll('.trade-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const btn = document.getElementById('detail-trade-btn');
+  if (mode === 'sell') {
+    btn.className = 'trade-submit sell-btn';
+    btn.textContent = 'Sell';
+    btn.onclick = () => alert('Sell functionality coming soon!');
+  } else {
+    btn.className = 'trade-submit buy-btn';
+    btn.textContent = 'Buy';
+  }
+}
+
+function detailTrade(id, mode) {
+  if (!walletPubkey) { alert('Connect wallet first'); return; }
+  const t = findTokenData(id);
+  if (!t) return;
+  if (t.isOnchain && t._onchain) {
+    openBuyModal(t._onchain);
+  } else {
+    alert('This is a mock token for demo purposes. Connect wallet and create a real launch!');
+  }
+}
+
+// ── Canvas Price Chart ──
+function drawPriceChart(token) {
+  const canvas = document.getElementById('priceChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width - 32;
+  canvas.height = 240;
+  const w = canvas.width, h = canvas.height;
+  const pad = { top: 20, right: 60, bottom: 30, left: 10 };
+
+  const isPresale = token.status === 'presale';
+  const lineColor = isPresale ? '#FFD700' : '#00ff88';
+  const fillColor = isPresale ? 'rgba(255,215,0,0.06)' : 'rgba(0,255,136,0.06)';
+  const prices = generatePriceHistory(token.price, isPresale, token.name);
+  const minP = Math.min(...prices) * 0.95;
+  const maxP = Math.max(...prices) * 1.05;
+  const xStep = (w - pad.left - pad.right) / (prices.length - 1);
+
+  const toX = i => pad.left + i * xStep;
+  const toY = p => pad.top + (1 - (p - minP) / (maxP - minP)) * (h - pad.top - pad.bottom);
+
+  // Background
+  ctx.fillStyle = '#080808';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid lines
+  ctx.strokeStyle = '#1a1a1a';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const y = pad.top + i * (h - pad.top - pad.bottom) / 4;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+    const pVal = maxP - i * (maxP - minP) / 4;
+    ctx.fillStyle = '#666';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'left';
+    ctx.fillText(pVal.toFixed(4), w - pad.right + 4, y + 3);
+  }
+
+  // X axis labels
+  ctx.fillStyle = '#444';
+  ctx.font = '9px JetBrains Mono';
+  ctx.textAlign = 'center';
+  const labels = ['30s', '25s', '20s', '15s', '10s', '5s', 'now'];
+  labels.forEach((l, i) => {
+    const x = pad.left + (i / (labels.length - 1)) * (w - pad.left - pad.right);
+    ctx.fillText(l, x, h - 6);
+  });
+
+  // Fill area
+  ctx.beginPath();
+  ctx.moveTo(toX(0), h - pad.bottom);
+  prices.forEach((p, i) => ctx.lineTo(toX(i), toY(p)));
+  ctx.lineTo(toX(prices.length - 1), h - pad.bottom);
+  ctx.closePath();
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(prices[0]));
+  prices.forEach((p, i) => { if (i > 0) ctx.lineTo(toX(i), toY(p)); });
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Current price dot
+  const lastX = toX(prices.length - 1);
+  const lastY = toY(prices[prices.length - 1]);
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = lineColor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 8, 0, Math.PI * 2);
+  ctx.strokeStyle = lineColor;
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+// ── Countdown timers ──
+setInterval(() => {
+  const now = Math.floor(Date.now()/1000);
+  document.querySelectorAll('[data-endtime]').forEach(el => {
+    const end = parseInt(el.dataset.endtime);
+    const diff = end - now;
+    if (diff <= 0) { el.textContent = '00:00:00'; el.style.color='#ff6644'; return; }
+    const h = Math.floor(diff/3600);
+    const m = Math.floor((diff%3600)/60);
+    const s = diff%60;
+    el.textContent = (h>0?String(h).padStart(2,'0')+':':'') + String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    if (diff <= 60) el.style.color='#ff6644'; else el.style.color='';
+  });
+  document.querySelectorAll('[data-countdown]').forEach(el => {
+    let v = parseInt(el.dataset.countdown);
+    v--; if (v < 0) v = 30;
+    el.dataset.countdown = v;
+    el.textContent = '00:' + String(v).padStart(2, '0');
+    if (v <= 5) el.style.color = '#ff6644'; else el.style.color = '';
+  });
+}, 1000);
+
+// Mock live updates
+setInterval(() => {
+  if (onchainLaunches.length > 0) return;
+  const cards = document.querySelectorAll('.card.presale .card-stat .s-value');
+  cards.forEach((el, i) => {
+    if (i % 3 === 1) { let v = parseInt(el.textContent.replace(/,/g, '')); v += Math.floor(Math.random() * 3) + 1; el.textContent = v.toLocaleString(); }
+    if (i % 3 === 2) { let v = parseFloat(el.textContent.replace(/,/g, '')); v += Math.random() * 1.5; el.textContent = v >= 1000 ? v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : v.toFixed(1); }
+  });
+}, 2000);
+
+// Filter chips
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    const filter = chip.textContent.trim();
+    document.querySelectorAll('.card').forEach(card => {
+      if (filter.includes('All')) card.style.display = '';
+      else if (filter.includes('Presale')) card.style.display = card.classList.contains('presale') ? '' : 'none';
+      else if (filter.includes('Live')) card.style.display = card.classList.contains('live') ? '' : 'none';
+      else card.style.display = '';
+    });
+  });
+});
+
+// Search
+document.querySelector('.filter-search').addEventListener('input', (e) => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.card').forEach(card => {
+    const name = card.querySelector('h3').textContent.toLowerCase();
+    const ticker = card.querySelector('.ticker-name').textContent.toLowerCase();
+    card.style.display = (name.includes(q) || ticker.includes(q)) ? '' : 'none';
+  });
+});
+
+// Close modals on overlay click
+document.getElementById('launchModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeLaunchModal(); });
+document.getElementById('buyModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeBuyModal(); });
+
+// ── Init ──
+loadOnchainLaunches();
+setInterval(loadOnchainLaunches, 30000);
+handleRoute();
+</script>
+</body>
+</html>

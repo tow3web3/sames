@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMES — Same Price. Same Chance. Same Floor.</title>
+<meta name="description" content="The fairest token launch protocol on Solana. Everyone enters at the same price. Nobody sells at a loss. Built different.">
+<meta name="theme-color" content="#FFD700">
+<meta property="og:title" content="SAMES — The Fair Launch Protocol">
+<meta property="og:description" content="Same price. Same chance. Same floor. The fairest token launch on Solana.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SAMES — The Fair Launch Protocol">
+<meta name="twitter:description" content="Everyone enters equal. Nobody exits at a loss.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#FFD700;
+  --gold-dim:#C8A800;
+  --gold-glow:rgba(255,215,0,.15);
+  --bg:#000000;
+  --bg2:#0a0a0a;
+  --bg3:#111111;
+  --card:#0d0d0d;
+  --border:#1a1a1a;
+  --text:#e8e8e8;
+  --text-dim:#666;
+  --white:#ffffff;
+  --green:#00ff88;
+  --red:#ff4444;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Space Grotesk',sans-serif;
+  --inter:'Inter',sans-serif;
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:hidden;line-height:1.6}
+::selection{background:var(--gold);color:#000}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#0a0a0a}
+::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:3px}
+
+/* GRAIN OVERLAY */
+.grain{position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")}
+
+/* FLOATING PARTICLES */
+.particles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.particle{position:absolute;width:3px;height:3px;background:var(--gold);border-radius:50%;opacity:0;animation:drift linear infinite}
+@keyframes drift{0%{transform:translateY(100vh) translateX(0);opacity:0}10%{opacity:.3}50%{opacity:.15}90%{opacity:.3}100%{transform:translateY(-10vh) translateX(50px);opacity:0}}
+
+/* HERO */
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;z-index:1;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,var(--gold-glow) 0%,transparent 70%);pointer-events:none;animation:hero-pulse 4s ease-in-out infinite}
+@keyframes hero-pulse{0%,100%{opacity:.4;transform:translateX(-50%) scale(1)}50%{opacity:.7;transform:translateX(-50%) scale(1.1)}}
+
+.hero-badge{font-family:var(--mono);font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);border:1px solid rgba(255,215,0,.2);padding:8px 20px;border-radius:100px;margin-bottom:40px;backdrop-filter:blur(10px);background:rgba(255,215,0,.03)}
+
+.hero h1{font-family:var(--sans);font-size:clamp(4rem,12vw,9rem);font-weight:700;letter-spacing:-4px;line-height:.9;margin-bottom:24px;background:linear-gradient(180deg,var(--white) 0%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+.hero-sub{font-family:var(--sans);font-size:clamp(1.1rem,2.5vw,1.6rem);font-weight:300;color:var(--text-dim);max-width:600px;margin-bottom:50px;line-height:1.5}
+.hero-sub strong{color:var(--gold);font-weight:600}
+
+.hero-tagline{font-family:var(--mono);font-size:14px;color:var(--gold);letter-spacing:2px;margin-bottom:50px;opacity:.8}
+
+/* CTA BUTTONS */
+.cta-group{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.btn{font-family:var(--sans);font-size:16px;font-weight:600;padding:16px 36px;border-radius:12px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px;border:none}
+.btn-primary{background:var(--gold);color:#000;box-shadow:0 0 30px rgba(255,215,0,.2)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(255,215,0,.4)}
+.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--gold);color:var(--gold)}
+
+/* SCROLL INDICATOR */
+.scroll-hint{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;opacity:.4;animation:bob 2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.scroll-hint span{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)}
+.scroll-arrow{width:20px;height:20px;border-right:2px solid var(--text-dim);border-bottom:2px solid var(--text-dim);transform:rotate(45deg)}
+
+/* HOW IT WORKS */
+.section{position:relative;padding:120px 20px;z-index:1}
+.section-label{font-family:var(--mono);font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:16px;text-align:center}
+.section-title{font-family:var(--sans);font-size:clamp(2rem,5vw,3.5rem);font-weight:700;text-align:center;margin-bottom:16px;letter-spacing:-1px}
+.section-desc{font-family:var(--inter);font-size:16px;color:var(--text-dim);text-align:center;max-width:550px;margin:0 auto 60px;line-height:1.7}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:0;max-width:700px;margin:0 auto;position:relative}
+.steps::before{content:'';position:absolute;left:28px;top:40px;bottom:40px;width:2px;background:linear-gradient(180deg,var(--gold),rgba(255,215,0,.1));border-radius:2px}
+.step{display:flex;gap:24px;padding:30px 0;position:relative}
+.step-num{width:56px;height:56px;min-width:56px;border-radius:50%;background:var(--bg);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;font-weight:700;color:var(--gold);z-index:1}
+.step-content h3{font-family:var(--sans);font-size:20px;font-weight:600;margin-bottom:6px}
+.step-content p{color:var(--text-dim);font-size:15px;line-height:1.6}
+.step-tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:6px;margin-top:8px;letter-spacing:1px}
+.tag-gold{background:rgba(255,215,0,.1);color:var(--gold);border:1px solid rgba(255,215,0,.15)}
+.tag-green{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.15)}
+
+/* FEATURES GRID */
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1000px;margin:0 auto}
+.feature-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;transition:all .3s}
+.feature-card:hover{border-color:rgba(255,215,0,.2);transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.3)}
+.feature-icon{font-size:32px;margin-bottom:16px}
+.feature-card h3{font-family:var(--sans);font-size:18px;font-weight:600;margin-bottom:8px}
+.feature-card p{color:var(--text-dim);font-size:14px;line-height:1.6}
+
+/* COMPARISON */
+.comparison{max-width:800px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.comp-card{border-radius:16px;padding:36px;position:relative;overflow:hidden}
+.comp-old{background:#0a0000;border:1px solid rgba(255,68,68,.15)}
+.comp-new{background:#0a0800;border:1px solid rgba(255,215,0,.2)}
+.comp-card h3{font-family:var(--sans);font-size:22px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.comp-card ul{list-style:none;display:flex;flex-direction:column;gap:12px}
+.comp-card li{font-size:14px;color:var(--text-dim);display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.comp-old li::before{content:'✕';color:var(--red);font-weight:700;flex-shrink:0}
+.comp-new li::before{content:'✓';color:var(--gold);font-weight:700;flex-shrink:0}
+
+/* LIVE DEMO MOCKUP */
+.demo-container{max-width:500px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.5)}
+.demo-header{background:var(--bg3);padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.demo-header .token-name{font-family:var(--sans);font-weight:600;font-size:16px}
+.demo-header .status{font-family:var(--mono);font-size:12px;padding:4px 12px;border-radius:6px;animation:status-pulse 1.5s ease-in-out infinite}
+.status-live{background:rgba(255,215,0,.1);color:var(--gold);border:1px solid rgba(255,215,0,.2)}
+@keyframes status-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.demo-body{padding:32px 24px}
+.demo-timer{font-family:var(--mono);font-size:clamp(3rem,8vw,4.5rem);font-weight:700;text-align:center;color:var(--gold);margin-bottom:8px;text-shadow:0 0 30px rgba(255,215,0,.3)}
+.demo-label{font-family:var(--mono);font-size:11px;text-align:center;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-bottom:24px}
+.demo-price{text-align:center;margin-bottom:24px}
+.demo-price .label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.demo-price .value{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--white)}
+.demo-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.demo-stat{background:var(--bg2);border-radius:10px;padding:12px;text-align:center}
+.demo-stat .stat-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.demo-stat .stat-value{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text)}
+.demo-btn{width:100%;padding:16px;border:none;border-radius:12px;background:var(--gold);color:#000;font-family:var(--sans);font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:1px}
+.demo-btn:hover{box-shadow:0 0 40px rgba(255,215,0,.3);transform:scale(1.01)}
+.demo-floor{text-align:center;margin-top:16px;font-family:var(--mono);font-size:12px;color:var(--gold);opacity:.6}
+
+/* STATS BAR */
+.stats-bar{display:flex;justify-content:center;gap:60px;flex-wrap:wrap;padding:80px 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);z-index:1;position:relative}
+.stat-block{text-align:center}
+.stat-block .num{font-family:var(--sans);font-size:clamp(2rem,5vw,3rem);font-weight:700;color:var(--white);letter-spacing:-1px}
+.stat-block .label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+
+/* FOOTER */
+footer{text-align:center;padding:60px 20px;border-top:1px solid var(--border);z-index:1;position:relative}
+footer .logo{font-family:var(--sans);font-size:24px;font-weight:700;color:var(--gold);margin-bottom:16px}
+footer .links{display:flex;gap:24px;justify-content:center;margin-bottom:24px}
+footer .links a{font-family:var(--mono);font-size:13px;color:var(--text-dim);text-decoration:none;transition:color .2s}
+footer .links a:hover{color:var(--gold)}
+footer .copy{font-size:12px;color:var(--text-dim)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .comparison{grid-template-columns:1fr}
+  .stats-bar{gap:30px}
+  .hero h1{letter-spacing:-2px}
+  .steps::before{left:27px}
+}
+
+/* ANIMATIONS */
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<div class="particles" id="particles"></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Built on Solana</div>
+  <h1>SAMES</h1>
+  <p class="hero-tagline">SAME PRICE · SAME CHANCE · SAME FLOOR</p>
+  <p class="hero-sub">The first fair launch protocol where <strong>everyone enters at the same price</strong> and <strong>nobody sells at a loss</strong>. No bots. No snipers. No rugs.</p>
+  <div class="cta-group">
+    <a href="#how" class="btn btn-primary">How It Works</a>
+    <a href="#demo" class="btn btn-secondary">See Demo ↓</a>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="section">
+  <div class="section-label">The Problem</div>
+  <h2 class="section-title">Token launches are broken</h2>
+  <p class="section-desc">Bots snipe the first block. Insiders get the best price. You buy the top. Sound familiar?</p>
+  <div class="comparison">
+    <div class="comp-card comp-old">
+      <h3><span style="color:var(--red)">●</span> Other Launchpads</h3>
+      <ul>
+        <li>Bots snipe first block, you get the scraps</li>
+        <li>Insiders buy at 0.001, you buy at 0.05</li>
+        <li>Price dumps 90% in 30 seconds</li>
+        <li>Dev sells on you, floor goes to zero</li>
+        <li>You're exit liquidity — every time</li>
+      </ul>
+    </div>
+    <div class="comp-card comp-new">
+      <h3><span style="color:var(--gold)">●</span> SAMES</h3>
+      <ul>
+        <li>30-second window — everyone buys at the same price</li>
+        <li>No bot advantage, no front-running possible</li>
+        <li>Smart contract blocks sells below your entry</li>
+        <li>Your buy price is your permanent floor</li>
+        <li>You can only sell in profit — or hold</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="section-label">Mechanism</div>
+  <h2 class="section-title">How SAMES works</h2>
+  <p class="section-desc">Three steps. Thirty seconds. Total fairness.</p>
+  <div class="steps">
+    <div class="step fade-in">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Creator launches a token</h3>
+        <p>Set name, supply, and initial price. The token goes into a 30-second presale window. No trading yet — just a countdown.</p>
+        <span class="step-tag tag-gold">LAUNCH</span>
+      </div>
+    </div>
+    <div class="step fade-in">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Everyone buys at the SAME price</h3>
+        <p>30-second window. Fixed price. Whether you're a whale or a degen with $5 — you get the exact same entry. All buys are collected and bundled.</p>
+        <span class="step-tag tag-gold">30 SECONDS</span>
+      </div>
+    </div>
+    <div class="step fade-in">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Market opens — with a floor</h3>
+        <p>All buys execute. Token goes live. Price discovery begins. But here's the twist: <strong>you can never sell below your buy price.</strong> Your entry IS your floor. Forever.</p>
+        <span class="step-tag tag-green">PROTECTED</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="section" id="demo">
+  <div class="section-label">Preview</div>
+  <h2 class="section-title">The SAMES experience</h2>
+  <p class="section-desc">This is what a fair launch looks like.</p>
+  <div class="demo-container">
+    <div class="demo-header">
+      <span class="token-name">$EXAMPLE</span>
+      <span class="status status-live" id="demo-status">● PRESALE OPEN</span>
+    </div>
+    <div class="demo-body">
+      <div class="demo-timer" id="demo-timer">00:27</div>
+      <div class="demo-label">until market opens</div>
+      <div class="demo-price">
+        <div class="label">Fixed Entry Price</div>
+        <div class="value">0.001 SOL</div>
+      </div>
+      <div class="demo-stats">
+        <div class="demo-stat">
+          <div class="stat-label">Buyers</div>
+          <div class="stat-value" id="demo-buyers">847</div>
+        </div>
+        <div class="demo-stat">
+          <div class="stat-label">Total SOL</div>
+          <div class="stat-value" id="demo-sol">312.4</div>
+        </div>
+      </div>
+      <button class="demo-btn">BUY — SAME PRICE FOR ALL</button>
+      <div class="demo-floor">🔒 Your floor: 0.001 SOL (guaranteed)</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section">
+  <div class="section-label">Why SAMES</div>
+  <h2 class="section-title">Built different</h2>
+  <p class="section-desc">Every mechanic is designed for one thing: fairness.</p>
+  <div class="features">
+    <div class="feature-card fade-in">
+      <div class="feature-icon">⚖️</div>
+      <h3>Equal entry</h3>
+      <p>30-second presale window. Every buyer — whale or minnow — gets the exact same price. Speed doesn't matter. Only conviction.</p>
+    </div>
+    <div class="feature-card fade-in">
+      <div class="feature-icon">🔒</div>
+      <h3>Floor locked</h3>
+      <p>Smart contract enforced: you can never sell below your buy price. Your entry is your permanent floor. No panic dumps, no cascading sells.</p>
+    </div>
+    <div class="feature-card fade-in">
+      <div class="feature-icon">🤖</div>
+      <h3>Anti-bot</h3>
+      <p>No first-block advantage. No front-running. No sandwich attacks. Bots get the same price as humans. Sniping is pointless.</p>
+    </div>
+    <div class="feature-card fade-in">
+      <div class="feature-icon">📈</div>
+      <h3>Staircase price</h3>
+      <p>Every buy creates a new floor level. Price can only go up or sideways — never crash through layers of buyers. Natural support building.</p>
+    </div>
+    <div class="feature-card fade-in">
+      <div class="feature-icon">⚡</div>
+      <h3>Solana speed</h3>
+      <p>Sub-second finality. Near-zero fees. 30-second windows work because Solana is fast enough to handle thousands of concurrent buys.</p>
+    </div>
+    <div class="feature-card fade-in">
+      <div class="feature-icon">🛡️</div>
+      <h3>No rug possible</h3>
+      <p>Liquidity is locked by design. Sells can only happen above entry. The mechanic makes rugs mathematically impossible.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STATS (placeholder) -->
+<div class="stats-bar">
+  <div class="stat-block fade-in">
+    <div class="num">0</div>
+    <div class="label">Rugs on SAMES</div>
+  </div>
+  <div class="stat-block fade-in">
+    <div class="num">100%</div>
+    <div class="label">Fair launches</div>
+  </div>
+  <div class="stat-block fade-in">
+    <div class="num">0</div>
+    <div class="label">Sellers at a loss</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">SAMES</div>
+  <div class="links">
+    <a href="#">Twitter/X</a>
+    <a href="#">Docs</a>
+    <a href="#">GitHub</a>
+    <a href="#">Telegram</a>
+  </div>
+  <p class="copy">Same price. Same chance. Same floor. © 2026</p>
+</footer>
+
+<script>
+// Particles
+const pc=document.getElementById('particles');
+for(let i=0;i<30;i++){
+  const p=document.createElement('div');
+  p.className='particle';
+  p.style.left=Math.random()*100+'%';
+  p.style.animationDuration=(8+Math.random()*12)+'s';
+  p.style.animationDelay=(-Math.random()*20)+'s';
+  p.style.width=p.style.height=(1+Math.random()*3)+'px';
+  pc.appendChild(p);
+}
+
+// Scroll animations
+const obs=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')});
+},{threshold:.15});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+
+// Demo countdown
+let t=27;
+const timerEl=document.getElementById('demo-timer');
+const buyersEl=document.getElementById('demo-buyers');
+const solEl=document.getElementById('demo-sol');
+const statusEl=document.getElementById('demo-status');
+let buyers=847,sol=312.4;
+setInterval(()=>{
+  t--;
+  if(t<0)t=30;
+  timerEl.textContent='00:'+String(t).padStart(2,'0');
+  if(t===0){
+    statusEl.textContent='● MARKET LIVE';
+    statusEl.style.color='var(--green)';
+    setTimeout(()=>{
+      statusEl.textContent='● PRESALE OPEN';
+      statusEl.style.color='var(--gold)';
+      buyers=Math.floor(Math.random()*500)+500;
+      sol=(Math.random()*400+100).toFixed(1);
+    },2000);
+  }
+  if(t>0&&Math.random()>.4){
+    buyers+=Math.floor(Math.random()*5)+1;
+    sol=(parseFloat(sol)+Math.random()*2).toFixed(1);
+    buyersEl.textContent=buyers.toLocaleString();
+    solEl.textContent=sol;
+  }
+},1000);
+</script>
+</body>
+</html>
