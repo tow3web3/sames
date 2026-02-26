@@ -929,9 +929,9 @@ async function submitLaunch() {
     const provider = await getProvider();
     const mintKp = solanaWeb3.Keypair.generate();
     const mint = mintKp.publicKey;
-    const [launchPool] = findPDA([Buffer.from('launch_pool'), mint.toBytes()]);
-    const [vault] = findPDA([Buffer.from('vault'), launchPool.toBytes()]);
-    const [marketRegistry] = findPDA([Buffer.from('market_registry'), launchPool.toBytes()]);
+    const [launchPool] = findPDA([new TextEncoder().encode('launch_pool'), mint.toBytes()]);
+    const [vault] = findPDA([new TextEncoder().encode('vault'), launchPool.toBytes()]);
+    const [marketRegistry] = findPDA([new TextEncoder().encode('market_registry'), launchPool.toBytes()]);
 
     const disc = await getDiscriminator('create_launch');
     const data = new Uint8Array([
@@ -949,7 +949,7 @@ async function submitLaunch() {
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
       programId: PROGRAM_ID,
-      data: Buffer.from(data),
+      data: data,
     });
 
     const tx = new Transaction().add(ix);
@@ -991,9 +991,9 @@ async function submitBuy() {
     const provider = await getProvider();
     const lamports = Math.round(solAmount * LAMPORTS_PER_SOL);
     const mintKey = new PublicKey(selectedLaunch.mint);
-    const [launchPool] = findPDA([Buffer.from('launch_pool'), mintKey.toBytes()]);
-    const [vault] = findPDA([Buffer.from('vault'), launchPool.toBytes()]);
-    const [buyerRecord] = findPDA([Buffer.from('buyer_record'), launchPool.toBytes(), walletPubkey.toBytes()]);
+    const [launchPool] = findPDA([new TextEncoder().encode('launch_pool'), mintKey.toBytes()]);
+    const [vault] = findPDA([new TextEncoder().encode('vault'), launchPool.toBytes()]);
+    const [buyerRecord] = findPDA([new TextEncoder().encode('buyer_record'), launchPool.toBytes(), walletPubkey.toBytes()]);
 
     // Determine instruction based on phase
     const isPresale = selectedLaunch.status === STATUS_PRESALE;
@@ -1012,7 +1012,7 @@ async function submitBuy() {
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ],
         programId: PROGRAM_ID,
-        data: Buffer.from(data),
+        data: data,
       });
     } else if (isBondingCurve) {
       // Token-2022 program and buyer's token account needed
@@ -1034,7 +1034,7 @@ async function submitBuy() {
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ],
         programId: PROGRAM_ID,
-        data: Buffer.from(data),
+        data: data,
       });
     } else {
       toast('This token is graduated or closed — trade on Raydium', 'info');
