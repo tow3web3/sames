@@ -15,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 fs.mkdirSync(path.join(__dirname, 'uploads/pfp'), { recursive: true });
+fs.mkdirSync(path.join(__dirname, 'uploads/tokens'), { recursive: true });
 
 // ── Database ──
 const pool = new Pool({ connectionString: DATABASE_URL });
@@ -85,6 +86,63 @@ app.post('/api/profile/:wallet/pfp', upload.single('pfp'), async (req, res) => {
       ON CONFLICT(wallet) DO UPDATE SET pfp_url = $2, updated_at = NOW()
     `, [req.params.wallet, pfp_url]);
     res.json({ ok: true, pfp_url });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ══════════════════════════════════════════
+// TOKEN METADATA
+// ══════════════════════════════════════════
+
+const tokenStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, path.join(__dirname, 'uploads/tokens')),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.png';
+    cb(null, req.params.mint + ext);
+  }
+});
+const tokenUpload = multer({
+  storage: tokenStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    cb(null, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.mimetype));
+  }
+});
+
+app.get('/api/token/:mint', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM token_metadata WHERE mint = $1', [req.params.mint]);
+    if (!rows.length) return res.json(null);
+    res.json(rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/tokens/batch', async (req, res) => {
+  const { mints } = req.body;
+  if (!mints?.length) return res.json([]);
+  try {
+    const placeholders = mints.map((_, i) => `$${i + 1}`).join(',');
+    const { rows } = await pool.query(`SELECT * FROM token_metadata WHERE mint IN (${placeholders})`, mints);
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/token/:mint', tokenUpload.single('image'), async (req, res) => {
+  const { launch_address, description, website, telegram, twitter, creator_wallet } = req.body;
+  const image_url = req.file ? `/uploads/tokens/${req.file.filename}` : null;
+  try {
+    await pool.query(`
+      INSERT INTO token_metadata (mint, launch_address, image_url, description, website, telegram, twitter, creator_wallet)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ON CONFLICT(mint) DO UPDATE SET
+        launch_address = COALESCE($2, token_metadata.launch_address),
+        image_url = COALESCE($3, token_metadata.image_url),
+        description = COALESCE($4, token_metadata.description),
+        website = COALESCE($5, token_metadata.website),
+        telegram = COALESCE($6, token_metadata.telegram),
+        twitter = COALESCE($7, token_metadata.twitter),
+        updated_at = NOW()
+    `, [req.params.mint, launch_address || '', image_url, description || '', website || '', telegram || '', twitter || '', creator_wallet || '']);
+    res.json({ ok: true, image_url });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -800,6 +800,7 @@ const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 const API_URL = 'http://65.20.103.177:3001';
 let walletPubkey = null;
 let onchainLaunches = [];
+const tokenMetaCache = {};
 let selectedLaunch = null;
 let userProfile = null;
 let chatPollInterval = null;
@@ -1018,6 +1019,7 @@ if (uploadArea) {
 async function submitLaunch() {
   const name = document.getElementById('lm-name').value.trim();
   const symbol = document.getElementById('lm-symbol').value.trim();
+  const desc = document.getElementById('lm-desc')?.value?.trim() || '';
   if (!name || !symbol) { toast('Please fill in token name and symbol', 'warning'); return; }
   const supply = 1_000_000_000_000_000; // 1B tokens with 6 decimals
   const price = 1000; // 0.000001 SOL per token (starting price, bonding curve will increase)
@@ -1093,6 +1095,19 @@ async function submitLaunch() {
     const sig = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(sig, 'confirmed');
     toast('Token launched! TX: ' + sig.slice(0,16) + '...', 'success', 8000);
+    // Upload token metadata (image, description, socials)
+    try {
+      const form = new FormData();
+      form.append('launch_address', launchPool.toBase58());
+      form.append('creator_wallet', walletPubkey.toBase58());
+      form.append('description', desc);
+      form.append('website', document.getElementById('lm-website')?.value || '');
+      form.append('telegram', document.getElementById('lm-telegram')?.value || '');
+      form.append('twitter', document.getElementById('lm-twitter')?.value || '');
+      const fileInput = document.getElementById('imageInput');
+      if (fileInput?.files?.[0]) form.append('image', fileInput.files[0]);
+      await fetch(`${API_URL}/api/token/${mint.toBase58()}`, { method: 'POST', body: form });
+    } catch(e) { console.warn('metadata upload failed', e); }
     // Record initial price snapshot
     try {
       await fetch(`${API_URL}/api/snapshot/${launchPool.toBase58()}`, {
@@ -1282,6 +1297,18 @@ async function loadOnchainLaunches() {
       return b.start_time - a.start_time;
     });
     onchainLaunches = launches;
+    // Fetch metadata for all tokens
+    try {
+      const mints = launches.map(l => l.mint);
+      if (mints.length) {
+        const res = await fetch(`${API_URL}/api/tokens/batch`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mints })
+        });
+        const metaArr = await res.json();
+        for (const m of metaArr) tokenMetaCache[m.mint] = m;
+      }
+    } catch(e) { console.warn('metadata fetch failed', e); }
     renderAll();
   } catch(e) {
     console.error('Failed to load launches:', e);
@@ -1298,8 +1325,12 @@ function renderCard(l) {
   const isPresale = st === STATUS_PRESALE;
   const isBonding = st === STATUS_BONDING_CURVE;
   const isGraduated = st === STATUS_GRADUATED;
+  const meta = tokenMetaCache[l.mint];
   const emoji = emojis[Math.abs(hashCode(l.token_name)) % emojis.length];
   const bg = bgColors[Math.abs(hashCode(l.token_name)) % bgColors.length];
+  const avatarHTML = meta?.image_url
+    ? `<div class="token-avatar" style="background:${bg};padding:0;overflow:hidden"><img src="${API_URL}${meta.image_url}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>`
+    : `<div class="token-avatar" style="background:${bg}">${emoji}</div>`;
   const cardClass = isPresale ? 'presale' : (isBonding ? 'live' : '');
   
   const now = Math.floor(Date.now()/1000);
@@ -1346,7 +1377,7 @@ function renderCard(l) {
   return `
     <div class="card ${cardClass}" onclick="navigate('token','${l.address}')">
       <div class="card-header">
-        <div class="token-avatar" style="background:${bg}">${emoji}</div>
+        ${avatarHTML}
         <div class="card-info">
           <h3>${l.token_name}</h3>
           <span class="ticker-name">$${l.token_symbol}</span>
@@ -1413,8 +1444,14 @@ function renderTokenDetail(id) {
   const isPresale = st === STATUS_PRESALE;
   const isBonding = st === STATUS_BONDING_CURVE;
   const isGraduated = st === STATUS_GRADUATED;
+  const meta = tokenMetaCache[l.mint];
   const emoji = emojis[Math.abs(hashCode(l.token_name)) % emojis.length];
   const bg = bgColors[Math.abs(hashCode(l.token_name)) % bgColors.length];
+  const detailAvatarHTML = meta?.image_url
+    ? `<div class="detail-avatar" style="background:${bg};padding:0;overflow:hidden"><img src="${API_URL}${meta.image_url}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>`
+    : `<div class="detail-avatar" style="background:${bg}">${emoji}</div>`;
+  const descHTML = meta?.description ? `<div style="color:var(--text-dim);font-size:13px;margin-top:6px;line-height:1.5;max-width:600px">${meta.description}</div>` : '';
+  const socialsHTML = (meta?.website || meta?.telegram || meta?.twitter) ? `<div style="display:flex;gap:10px;margin-top:6px">${meta.website ? `<a href="${meta.website}" target="_blank" style="color:var(--blue);font-size:12px;text-decoration:none">🌐 Website</a>` : ''}${meta.telegram ? `<a href="${meta.telegram}" target="_blank" style="color:var(--blue);font-size:12px;text-decoration:none">💬 Telegram</a>` : ''}${meta.twitter ? `<a href="${meta.twitter}" target="_blank" style="color:var(--blue);font-size:12px;text-decoration:none">🐦 Twitter</a>` : ''}</div>` : '';
   const currentPrice = bondingCurvePrice(l.price_lamports, l.slope_scaled, l.tokens_sold_curve);
   const priceSOL = formatSOL(currentPrice);
   const marketCap = formatSOL(Math.floor((currentPrice / LAMPORTS_PER_SOL) * l.total_supply * LAMPORTS_PER_SOL));
@@ -1476,10 +1513,12 @@ function renderTokenDetail(id) {
   container.innerHTML = `
     <button class="detail-back" onclick="navigate('launches')">← Back to Launches</button>
     <div class="detail-header">
-      <div class="detail-avatar" style="background:${bg}">${emoji}</div>
+      ${detailAvatarHTML}
       <div class="detail-title">
         <h1>${l.token_name} <span class="card-status ${statusClasses[st]}">${statusLabels[st]}</span></h1>
         <span class="dticker">$${l.token_symbol}</span>
+        ${descHTML}
+        ${socialsHTML}
         <div class="detail-addr">
           <span>${l.mint}</span>
           <button class="copy-btn" onclick="navigator.clipboard.writeText('${l.mint}');this.textContent='✓';setTimeout(()=>this.textContent='📋',1000)">📋</button>
