@@ -87,7 +87,7 @@ pub fn handler(ctx: Context<TransferHook>, amount: u64) -> Result<()> {
     let destination = ctx.accounts.destination_account.key();
 
     // ── 1. Only enforce on live launches ────────────────────────────────
-    if launch_pool.status != LaunchStatus::Live {
+    if launch_pool.status != LaunchStatus::BondingCurve {
         // Presale tokens shouldn't be transferable anyway; Closed = no restrictions
         return Ok(());
     }
