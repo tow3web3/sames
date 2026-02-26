@@ -1775,7 +1775,8 @@ async function loadChat(tokenAddress) {
 function renderChatMsg(m) {
   const name = m.username || shortAddr(m.wallet);
   const pfp = m.pfp_url ? `<img src="${API_URL}${m.pfp_url}">` : '👤';
-  const time = timeAgo(m.created_at);
+  const ts = typeof m.created_at === 'string' ? Math.floor(new Date(m.created_at).getTime()/1000) : m.created_at;
+  const time = timeAgo(ts);
   return `
     <div class="chat-msg">
       <div class="chat-pfp">${pfp}</div>
