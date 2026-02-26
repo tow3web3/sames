@@ -23,21 +23,52 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
 ::-webkit-scrollbar-track{background:#0a0a0a}
 ::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 
-/* TOP BAR */
+/* ── LAYOUT: SIDEBAR + MAIN ── */
+.app-layout{display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:200px;background:var(--bg);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;z-index:110;display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-logo{padding:18px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.sidebar-logo .logo{font-family:var(--sans);font-size:18px;font-weight:700;color:var(--gold);letter-spacing:-0.5px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.devnet-badge{font-family:var(--mono);font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(68,136,255,.15);color:var(--blue);border:1px solid rgba(68,136,255,.25);letter-spacing:1px;font-weight:600}
+
+.sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
+.sidebar-link{font-family:var(--inter);font-size:14px;color:var(--text-dim);text-decoration:none;padding:10px 14px;border-radius:10px;transition:all .15s;cursor:pointer;display:flex;align-items:center;gap:10px;border:none;background:none;width:100%;text-align:left}
+.sidebar-link:hover{color:var(--text);background:var(--bg3)}
+.sidebar-link.active{color:var(--text);background:var(--bg3)}
+.sidebar-link .link-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.sidebar-create{margin:8px 10px;padding:12px 14px;border-radius:10px;border:none;font-family:var(--sans);font-size:14px;font-weight:600;background:var(--gold);color:#000;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;justify-content:center}
+.sidebar-create:hover{box-shadow:0 0 20px rgba(255,215,0,.25)}
+
+.sidebar-bottom{padding:12px 10px;border-top:1px solid var(--border)}
+
+/* MAIN CONTENT */
+.main-content{flex:1;margin-left:200px;min-width:0}
+
+/* TOP BAR (simplified — no nav, just search + wallet) */
 .topbar{position:sticky;top:0;z-index:100;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
-.topbar-left{display:flex;align-items:center;gap:24px}
-.logo{font-family:var(--sans);font-size:20px;font-weight:700;color:var(--gold);letter-spacing:-0.5px;cursor:pointer}
-.devnet-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(68,136,255,.15);color:var(--blue);border:1px solid rgba(68,136,255,.25);letter-spacing:1px;font-weight:600}
-.nav{display:flex;gap:4px}
-.nav a{font-family:var(--inter);font-size:13px;color:var(--text-dim);text-decoration:none;padding:6px 14px;border-radius:8px;transition:all .15s;cursor:pointer}
-.nav a:hover,.nav a.active{color:var(--text);background:var(--bg3)}
-.nav a.active{color:var(--gold)}
+.topbar-left{display:flex;align-items:center;gap:16px;flex:1}
+.topbar-search{font-family:var(--mono);font-size:12px;padding:8px 14px 8px 32px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);outline:none;width:280px;transition:border-color .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%23666' viewBox='0 0 24 24'%3E%3Cpath d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' stroke='%23666' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center}
+.topbar-search::placeholder{color:var(--text-dim)}
+.topbar-search:focus{border-color:var(--gold)}
 .topbar-right{display:flex;align-items:center;gap:12px}
 .wallet-btn{font-family:var(--mono);font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--gold);color:var(--gold);background:transparent;cursor:pointer;transition:all .15s}
 .wallet-btn:hover{background:rgba(255,215,0,.08)}
 .wallet-btn.connected{border-color:var(--green);color:var(--green)}
-.create-btn{font-family:var(--sans);font-size:13px;font-weight:600;padding:8px 18px;border-radius:8px;border:none;background:var(--gold);color:#000;cursor:pointer;transition:all .15s}
-.create-btn:hover{box-shadow:0 0 20px rgba(255,215,0,.25)}
+
+/* Hide old nav and create btn in topbar */
+.nav{display:none}
+.create-btn{display:none}
+
+/* Mobile sidebar */
+@media(max-width:768px){
+  .sidebar{width:60px}
+  .sidebar-logo .logo span,.sidebar-link span:not(.link-icon),.sidebar-create span{display:none}
+  .sidebar-create{padding:12px}
+  .main-content{margin-left:60px}
+  .sidebar-link{justify-content:center;padding:10px}
+  .sidebar-link .link-icon{margin:0}
+}
 
 /* FILTERS */
 .filters{padding:16px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);overflow-x:auto}
@@ -327,19 +358,46 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
 </head>
 <body>
 
+<!-- SIDEBAR -->
+<div class="app-layout">
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo" onclick="navigate('launches')">
+      <span style="font-size:22px">⚖️</span>
+      <span>SAMES <span class="devnet-badge">DEV</span></span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="sidebar-link" href="#launches" data-nav="launches">
+      <span class="link-icon">🏠</span><span>Home</span>
+    </a>
+    <a class="sidebar-link" href="#my-tokens" data-nav="my-tokens">
+      <span class="link-icon">👤</span><span>Profile</span>
+    </a>
+    <a class="sidebar-link" href="#how-it-works" data-nav="how-it-works">
+      <span class="link-icon">📖</span><span>How It Works</span>
+    </a>
+  </nav>
+  <button class="sidebar-create" id="createBtn" onclick="navigate('create')">
+    <span>🚀</span><span>Create Token</span>
+  </button>
+  <div class="sidebar-bottom">
+    <button class="sidebar-link" id="walletBtn" style="width:100%">
+      <span class="link-icon">💳</span><span>Connect Wallet</span>
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-left">
-    <div class="logo" onclick="navigate('launches')">SAMES <span class="devnet-badge">DEVNET</span></div>
-    <nav class="nav">
-      <a href="#launches" data-nav="launches" class="active">Launches</a>
-      <a href="#my-tokens" data-nav="my-tokens">My Tokens</a>
-      <a href="#how-it-works" data-nav="how-it-works">How It Works</a>
-    </nav>
+    <input type="text" class="topbar-search" placeholder="Search token..." id="topbarSearch">
   </div>
   <div class="topbar-right">
-    <button class="create-btn" id="createBtn">+ Launch Token</button>
-    <button class="wallet-btn" id="walletBtn">Connect Wallet</button>
+    <button class="wallet-btn" id="walletBtn2" style="display:none">Connect Wallet</button>
   </div>
 </div>
 
@@ -647,6 +705,9 @@ body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:
   </div>
 </div>
 
+</div><!-- /main-content -->
+</div><!-- /app-layout -->
+
 <!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
 
@@ -710,7 +771,7 @@ function navigate(page, param) {
 function handleRoute() {
   const hash = window.location.hash || '#launches';
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('.nav a,.sidebar-link').forEach(a => a.classList.remove('active'));
 
   if (hash.startsWith('#token/')) {
     document.getElementById('page-token').classList.add('active');
@@ -720,13 +781,13 @@ function handleRoute() {
     document.getElementById('page-create').classList.add('active');
   } else if (hash === '#how-it-works') {
     document.getElementById('page-how-it-works').classList.add('active');
-    document.querySelector('[data-nav="how-it-works"]')?.classList.add('active');
+    document.querySelectorAll('[data-nav="how-it-works"]').forEach(a => a.classList.add('active'));
   } else if (hash === '#my-tokens') {
     document.getElementById('page-my-tokens').classList.add('active');
-    document.querySelector('[data-nav="my-tokens"]')?.classList.add('active');
+    document.querySelectorAll('[data-nav="my-tokens"]').forEach(a => a.classList.add('active'));
   } else {
     document.getElementById('page-launches').classList.add('active');
-    document.querySelector('[data-nav="launches"]')?.classList.add('active');
+    document.querySelectorAll('[data-nav="launches"]').forEach(a => a.classList.add('active'));
   }
 }
 window.addEventListener('hashchange', handleRoute);
@@ -738,19 +799,23 @@ async function getProvider() {
   throw new Error('No Solana wallet found. Install Phantom or Solflare.');
 }
 
-document.getElementById('walletBtn').addEventListener('click', async () => {
+async function connectWallet() {
   try {
     const provider = await getProvider();
     const resp = await provider.connect();
     walletPubkey = resp.publicKey;
+    const short = walletPubkey.toBase58().slice(0,4) + '...' + walletPubkey.toBase58().slice(-4);
+    // Update sidebar wallet button
     const btn = document.getElementById('walletBtn');
-    btn.textContent = walletPubkey.toBase58().slice(0,4) + '...' + walletPubkey.toBase58().slice(-4);
-    btn.classList.add('connected');
+    btn.querySelector('span:last-child').textContent = short;
+    btn.style.color = 'var(--green)';
+    toast('Wallet connected: ' + short, 'success');
   } catch(e) {
     console.error(e);
     toast('Wallet connection failed: ' + (e.message || e), 'error');
   }
-});
+}
+document.getElementById('walletBtn').addEventListener('click', connectWallet);
 
 // ── Helpers ──
 function hashCode(s) { let h=0; for(let i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i)|0; return h; }
@@ -787,11 +852,7 @@ function timeAgo(timestamp) {
   return Math.floor(diff/86400) + 'd ago';
 }
 
-// ── Create Launch ──
-document.getElementById('createBtn').addEventListener('click', () => {
-  if (!walletPubkey) { toast('Connect your wallet first', 'warning'); return; }
-  navigate('create');
-});
+// ── Create Launch ── (sidebar button already has onclick="navigate('create')")
 
 function toggleSocials() {
   document.getElementById('socialFields').classList.toggle('open');
@@ -1482,14 +1543,20 @@ document.querySelectorAll('.filter-chip').forEach(chip => {
   });
 });
 
-// Search
-document.querySelector('.filter-search').addEventListener('input', (e) => {
-  const q = e.target.value.toLowerCase();
+// Search (both topbar and filter bar)
+function handleSearch(q) {
+  q = q.toLowerCase();
   document.querySelectorAll('.card').forEach(card => {
     const name = card.querySelector('h3')?.textContent.toLowerCase() || '';
     const ticker = card.querySelector('.ticker-name')?.textContent.toLowerCase() || '';
     card.style.display = (name.includes(q) || ticker.includes(q)) ? '' : 'none';
   });
+}
+document.querySelector('.filter-search')?.addEventListener('input', e => handleSearch(e.target.value));
+document.getElementById('topbarSearch')?.addEventListener('input', e => {
+  handleSearch(e.target.value);
+  // Also navigate to launches if not there
+  if (window.location.hash !== '#launches' && e.target.value) navigate('launches');
 });
 
 // Close modals on overlay click
