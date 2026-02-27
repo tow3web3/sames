@@ -802,7 +802,8 @@ const { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgra
 const PROGRAM_ID = new PublicKey('H91AKWdUASAKjpGwq4NXzp8kyddLbZMj9N1rP8HFjCmw');
 const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 
-const API_URL = 'http://65.20.103.177:3001';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '65.20.103.177'
+  ? '' : 'https://65.20.103.177:3443';
 let walletPubkey = null;
 let onchainLaunches = null;
 let tradeMode = 'buy';

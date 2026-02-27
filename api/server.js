@@ -52,6 +52,8 @@ function requireWalletSig(req, res, next) {
   next();
 }
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve frontend files from parent directory
+app.use(express.static(path.join(__dirname, '..')));
 fs.mkdirSync(path.join(__dirname, 'uploads/pfp'), { recursive: true });
 fs.mkdirSync(path.join(__dirname, 'uploads/tokens'), { recursive: true });
 
